@@ -24,13 +24,13 @@
   },
   "keywords": [],
   "repository": {
-    "url": ""
+    "url": "https://github.com/ncpa0cpl/adapters.ts"
   },
   "description": "",
   "license": "MIT",
   "author": {
-    "name": "",
-    "email": ""
+    "name": "Szymon Bretner (ncpa0cpl)",
+    "email": "szymonb21@gmail.com"
   },
   "dependencies": {
     "axios": "^0.26.1",
