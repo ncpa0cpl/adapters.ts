@@ -12,15 +12,15 @@ export type RequestMethod =
   | "POST"
   | "PUT";
 
-export type XHRInterface = {
+export type XHRInterface<R> = {
   sendRequest(params: {
     type: RequestMethod;
     url: string;
     data?: Record<string, any>;
     config?: any;
-  }): Promise<any>;
+  }): Promise<R>;
 
-  extractPayload(response: any): Promise<unknown>;
+  extractPayload(response: R): Promise<unknown>;
 };
 
 type ConfigFor<I extends typeof BaseAdapter> = Exclude<

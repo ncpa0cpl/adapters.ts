@@ -239,6 +239,102 @@ describe("FetchAdapter", () => {
         foo: { type: DataType.String },
       });
       static readonly GET_RESPONSE_TYPE_DEF = DataType.RecordOf({
+        data: { type: DataType.RecordOf({ bar: { type: DataType.String } }) },
+      });
+      static readonly OPTIONS_RESPONSE_TYPE_DEF = DataType.RecordOf({
+        data: { type: DataType.RecordOf({ baz: { type: DataType.String } }) },
+        status: { type: DataType.Number },
+      });
+      static readonly PATCH_RESPONSE_TYPE_DEF = DataType.RecordOf({
+        data: {
+          type: DataType.RecordOf({
+            qux: { type: DataType.ArrayOf(DataType.Number) },
+          }),
+        },
+      });
+      static readonly POST_RESPONSE_TYPE_DEF = DataType.RecordOf({
+        quux: { type: DataType.String },
+      });
+      static readonly PUT_RESPONSE_TYPE_DEF = DataType.RecordOf({
+        coorg: { type: DataType.String },
+      });
+    }
+
+    const responseData1 = { foo: "foo" };
+    const mockResult1 = {
+      ok: true,
+      json() {
+        return responseData1;
+      },
+    };
+    fetchMock.mockResolvedValue(mockResult1);
+    const result1 = await TestAdapter.delete();
+    expect(result1.json()).toEqual(responseData1);
+
+    const responseData2 = { data: { bar: "bar" } };
+    const mockResult2 = {
+      ok: true,
+      json() {
+        return responseData2;
+      },
+    };
+    fetchMock.mockResolvedValue(mockResult2);
+    const result2 = await TestAdapter.get();
+    expect(result2.json()).toEqual(responseData2);
+
+    const responseData3 = { data: { baz: "baz" }, status: 200 };
+    const mockResult3 = {
+      ok: true,
+      json() {
+        return responseData3;
+      },
+    };
+    fetchMock.mockResolvedValue(mockResult3);
+    const result3 = await TestAdapter.options();
+    expect(result3.json()).toEqual(responseData3);
+
+    const responseData4 = { data: { qux: [1, 2, 3] } };
+    const mockResult4 = {
+      ok: true,
+      json() {
+        return responseData4;
+      },
+    };
+    fetchMock.mockResolvedValue(mockResult4);
+    const result4 = await TestAdapter.patch();
+    expect(result4.json()).toEqual(responseData4);
+
+    const responseData5 = { quux: "quux" };
+    const mockResult5 = {
+      ok: true,
+      json() {
+        return responseData5;
+      },
+    };
+    fetchMock.mockResolvedValue(mockResult5);
+    const result5 = await TestAdapter.post();
+    expect(result5.json()).toEqual(responseData5);
+
+    const responseData6 = { coorg: "coorg" };
+    const mockResult6 = {
+      ok: true,
+      json() {
+        return responseData6;
+      },
+    };
+    fetchMock.mockResolvedValue(mockResult6);
+    const result6 = await TestAdapter.put();
+    expect(result6.json()).toEqual(responseData6);
+  });
+
+  it("should validate the response and throw error if invalid", async () => {
+    class TestAdapter extends FetchAdapter {
+      static readonly URL_TEMPLATE = "/api";
+
+      static readonly DELETE_RESPONSE_TYPE_DEF = DataType.RecordOf({
+        foo: { type: DataType.String },
+      });
+      static readonly GET_RESPONSE_TYPE_DEF = DataType.RecordOf({
         bar: { type: DataType.String },
       });
       static readonly OPTIONS_RESPONSE_TYPE_DEF = DataType.RecordOf({
@@ -255,89 +351,28 @@ describe("FetchAdapter", () => {
       });
     }
 
-    const responseData = { foo: "foo" };
-    const mockResult1 = {
-      ok: true,
-      json() {
-        return responseData;
-      },
-    };
+    const mockResult1 = { foo: 1 };
     fetchMock.mockResolvedValue(mockResult1);
-    const result1 = await TestAdapter.delete();
-    expect(result1.json()).toEqual(responseData);
+    expect(TestAdapter.delete()).rejects.toThrowError();
 
-    // const mockResult2 = { data: { bar: "bar" }, status: 200 };
-    // fetchMock.mockResolvedValue(mockResult2);
-    // const result2 = await TestAdapter.get();
-    // expect(result2).toEqual(mockResult2);
+    const mockResult2 = {};
+    fetchMock.mockResolvedValue(mockResult2);
+    expect(TestAdapter.get()).rejects.toThrowError();
 
-    // const mockResult3 = { data: { baz: "baz" }, status: 200 };
-    // fetchMock.mockResolvedValue(mockResult3);
-    // const result3 = await TestAdapter.options();
-    // expect(result3).toEqual(mockResult3);
+    const mockResult3 = true;
+    fetchMock.mockResolvedValue(mockResult3);
+    expect(TestAdapter.options()).rejects.toThrowError();
 
-    // const mockResult4 = { data: { qux: "qux" }, status: 200 };
-    // fetchMock.mockResolvedValue(mockResult4);
-    // const result4 = await TestAdapter.patch();
-    // expect(result4).toEqual(mockResult4);
+    const mockResult4 = { quux: "quux" };
+    fetchMock.mockResolvedValue(mockResult4);
+    expect(TestAdapter.patch()).rejects.toThrowError();
 
-    // const mockResult5 = { data: { quux: "quux" }, status: 200 };
-    // fetchMock.mockResolvedValue(mockResult5);
-    // const result5 = await TestAdapter.post();
-    // expect(result5).toEqual(mockResult5);
+    const mockResult5 = ["quux", "quux"];
+    fetchMock.mockResolvedValue(mockResult5);
+    expect(TestAdapter.post()).rejects.toThrowError();
 
-    // const mockResult6 = { data: { coorg: "coorg" }, status: 200 };
-    // fetchMock.mockResolvedValue(mockResult6);
-    // const result6 = await TestAdapter.put();
-    // expect(result6).toEqual(mockResult6);
+    const mockResult6 = [["coorg", "coorg"]];
+    fetchMock.mockResolvedValue(mockResult6);
+    expect(TestAdapter.put()).rejects.toThrowError();
   });
-
-  // it("should validate the response and throw error if invalid", async () => {
-  //   class TestAdapter extends FetchAdapter {
-  //     static readonly URL_TEMPLATE = "/api";
-
-  //     static readonly DELETE_RESPONSE_TYPE_DEF = DataType.RecordOf({
-  //       foo: { type: DataType.String },
-  //     });
-  //     static readonly GET_RESPONSE_TYPE_DEF = DataType.RecordOf({
-  //       bar: { type: DataType.String },
-  //     });
-  //     static readonly OPTIONS_RESPONSE_TYPE_DEF = DataType.RecordOf({
-  //       baz: { type: DataType.String },
-  //     });
-  //     static readonly PATCH_RESPONSE_TYPE_DEF = DataType.RecordOf({
-  //       qux: { type: DataType.String },
-  //     });
-  //     static readonly POST_RESPONSE_TYPE_DEF = DataType.RecordOf({
-  //       quux: { type: DataType.String },
-  //     });
-  //     static readonly PUT_RESPONSE_TYPE_DEF = DataType.RecordOf({
-  //       coorg: { type: DataType.String },
-  //     });
-  //   }
-
-  //   const mockResult1 = { data: { foo: 1 }, status: 200 };
-  //   fetchMock.mockResolvedValue(mockResult1);
-  //   expect(TestAdapter.delete()).rejects.toThrowError();
-
-  //   const mockResult2 = { data: {}, status: 200 };
-  //   fetchMock.mockResolvedValue(mockResult2);
-  //   expect(TestAdapter.get()).rejects.toThrowError();
-
-  //   const mockResult3 = { data: true, status: 200 };
-  //   fetchMock.mockResolvedValue(mockResult3);
-  //   expect(TestAdapter.options()).rejects.toThrowError();
-
-  //   const mockResult4 = { data: { quux: "quux" }, status: 200 };
-  //   fetchMock.mockResolvedValue(mockResult4);
-  //   expect(TestAdapter.patch()).rejects.toThrowError();
-
-  //   const mockResult5 = { data: ["quux", "quux"], status: 200 };
-  //   fetchMock.mockResolvedValue(mockResult5);
-  //   expect(TestAdapter.post()).rejects.toThrowError();
-
-  //   const mockResult6 = { data: [["coorg", "coorg"]], status: 200 };
-  //   fetchMock.mockResolvedValue(mockResult6);
-  //   expect(TestAdapter.put()).rejects.toThrowError();
-  // });
 });

@@ -1,10 +1,11 @@
 import type { RequestMethod, XHRInterface } from "../BaseAdapter";
+import type { _ } from "../substitutor";
 
 export type FetchResponse<T> = Response & {
   json(): T;
 };
 
-export class FetchXHR<T> implements XHRInterface {
+export class FetchXHR<T = _> implements XHRInterface<FetchResponse<T>> {
   private defaultRequestConfig: RequestInit = {};
 
   constructor(config?: RequestInit) {
@@ -44,7 +45,7 @@ export class FetchXHR<T> implements XHRInterface {
     }) as any;
   }
 
-  async extractPayload(response: FetchResponse<any>): Promise<unknown> {
+  async extractPayload(response: FetchResponse<T>): Promise<T> {
     return await response.json();
   }
 }

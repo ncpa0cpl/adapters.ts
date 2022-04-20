@@ -1,3 +1,6 @@
+import type { AxiosResponse } from "axios";
+import type { FetchResponse } from "./FetchAdapter/fetch-xhr";
+
 /* eslint-disable max-len */
 declare const index: unique symbol;
 
@@ -5,16 +8,6 @@ declare const index: unique symbol;
 export interface _<N extends number = 0> {
   [index]: N;
 }
-export type _0 = _<0>;
-export type _1 = _<1>;
-export type _2 = _<2>;
-export type _3 = _<3>;
-export type _4 = _<4>;
-export type _5 = _<5>;
-export type _6 = _<6>;
-export type _7 = _<7>;
-export type _8 = _<8>;
-export type _9 = _<9>;
 
 declare const fixed: unique symbol;
 
@@ -35,6 +28,10 @@ export type $<T, S extends any[]> = (
   T extends Fixed<infer U> ? { [indirect]: U } :
   T extends _<infer N> ? { [indirect]: S[N] } :
   T extends Promise<infer C> ? {[indirect]: Promise<$<C, S>>} :
+  T extends AxiosResponse<infer RD> ? {[indirect]: AxiosResponse<$<RD, S>>} :
+  T extends FetchResponse<infer FRD> ? {[indirect]: FetchResponse<$<FRD, S>>} :
+  T extends Set<infer SD> ? {[indirect]: Set<$<SD, S>>} :
+  T extends Map<infer MK, infer MD> ? {[indirect]: Map<$<MK, S>, $<MD, S>>} :
   T extends undefined | null | boolean | string | number ? { [indirect]: T } :
   T extends (infer A)[] & { length: infer L } ? {
     [indirect]: L extends keyof TupleTable

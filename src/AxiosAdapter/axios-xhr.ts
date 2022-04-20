@@ -1,8 +1,9 @@
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
 import axios from "axios";
 import type { RequestMethod, XHRInterface } from "../BaseAdapter";
+import type { _ } from "../substitutor";
 
-export class AxiosXHR<T> implements XHRInterface {
+export class AxiosXHR<T = _> implements XHRInterface<AxiosResponse<T>> {
   private axiosInstance: AxiosInstance;
 
   constructor(axiosInstance?: AxiosInstance) {
@@ -28,31 +29,7 @@ export class AxiosXHR<T> implements XHRInterface {
     });
   }
 
-  async extractPayload(response: AxiosResponse<any, any>): Promise<unknown> {
+  async extractPayload(response: AxiosResponse<T>): Promise<unknown> {
     return response.data;
   }
 }
-
-// interface Int {
-//   sendRequest(): Promise<any>;
-// }
-
-// interface AxiosInt<T> {
-//   sendRequest(): Promise<AxiosResponse<T>>;
-// }
-
-// class Test {
-//   static readonly inter: Int;
-
-//   static get<T extends typeof Test>(
-//     this: T
-//   ): ReturnType<$<T["inter"], [string]>["sendRequest"]> {
-//     throw {};
-//   }
-// }
-
-// class Test2 extends Test {
-//   static readonly inter: AxiosInt<_>;
-// }
-
-// const a = await Test2.get();

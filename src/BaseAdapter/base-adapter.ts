@@ -13,7 +13,7 @@ import type {
 } from "./types";
 
 export abstract class BaseAdapter {
-  protected static readonly xhr: XHRInterface = new DummyXHR();
+  protected static readonly xhr: XHRInterface<any> = new DummyXHR();
   private static urlGenerator: InternalAdapterUrlGenerator = undefined;
 
   private static getUrlGenerator() {
