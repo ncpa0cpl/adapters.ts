@@ -1,0 +1,27 @@
+{
+  "packageManager": "yarn",
+  "parallel": true,
+  "hooks": {
+    "pre-push": [
+      {
+        "name": "Prettier",
+        "script": "test:prettier"
+      },
+      {
+        "name": "ESLint",
+        "script": "test:lint"
+      },
+      {
+        "name": "TypeScript",
+        "script": "test:tsc"
+      },
+      {
+        "name": "Jest",
+        "script": "test:jest",
+        "mustRunAlone": true
+      }
+    ],
+    "pre-commit": [],
+    "post-commit": []
+  }
+}

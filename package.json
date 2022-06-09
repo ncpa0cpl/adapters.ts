@@ -1,5 +1,7 @@
 {
   "devDependencies": {
+    "@swc/core": "^1.2.197",
+    "@swc/jest": "^0.2.21",
     "@types/jest": "^27.4.1",
     "@typescript-eslint/eslint-plugin": "^5.19.0",
     "@typescript-eslint/parser": "^5.19.0",
@@ -10,7 +12,6 @@
     "jest": "^27.5.1",
     "prettier": "^2.6.2",
     "prettier-plugin-jsdoc": "^0.3.38",
-    "ts-jest": "^27.1.4",
     "typescript": "^4.7.0-beta"
   },
   "name": "adapters.ts",
@@ -18,9 +19,10 @@
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
-    "lint": "eslint .",
-    "tsc": "tsc --noEmit",
-    "test": "jest --coverage"
+    "test:lint": "eslint .",
+    "test:tsc": "tsc --noEmit",
+    "test:jest": "jest --coverage",
+    "test:prettier": "prettier --check ./src/*"
   },
   "keywords": [],
   "repository": {
@@ -35,6 +37,7 @@
   "dependencies": {
     "axios": "^0.26.1",
     "dilswer": "^1.0.3",
+    "git-hook-tasks": "ncpa0cpl/git-hook-tasks",
     "url-templater.ts": "^1.1.0"
   }
 }
