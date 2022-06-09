@@ -7,6 +7,7 @@ export type FetchResponse<T> = Response & {
 
 export class FetchXHR<T = _> implements XHRInterface<FetchResponse<T>> {
   private defaultRequestConfig: RequestInit = {};
+  private payloadExtractCache = new WeakMap<FetchResponse<any>, any>();
 
   constructor(config?: RequestInit) {
     if (config) {
@@ -15,13 +16,13 @@ export class FetchXHR<T = _> implements XHRInterface<FetchResponse<T>> {
   }
 
   sendRequest(params: {
-    type: RequestMethod;
+    method: RequestMethod;
     url: string;
     data?: Record<string, any> | undefined;
     config?: RequestInit | undefined;
   }): Promise<FetchResponse<T>> {
     if (
-      params.type === "GET" &&
+      params.method === "GET" &&
       params.data &&
       typeof params.data === "object"
     ) {
@@ -36,9 +37,9 @@ export class FetchXHR<T = _> implements XHRInterface<FetchResponse<T>> {
 
     return fetch(params.url, {
       ...this.defaultRequestConfig,
-      method: params.type,
+      method: params.method,
       body:
-        params.data && params.type !== "GET"
+        params.data && params.method !== "GET"
           ? JSON.stringify(params.data)
           : undefined,
       ...(params.config ?? {}),
@@ -46,6 +47,14 @@ export class FetchXHR<T = _> implements XHRInterface<FetchResponse<T>> {
   }
 
   async extractPayload(response: FetchResponse<T>): Promise<T> {
-    return await response.json();
+    if (this.payloadExtractCache.has(response)) {
+      return this.payloadExtractCache.get(response);
+    }
+
+    const result = await response.json();
+
+    this.payloadExtractCache.set(response, result);
+
+    return result;
   }
 }

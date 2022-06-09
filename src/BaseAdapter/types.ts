@@ -14,7 +14,7 @@ export type RequestMethod =
 
 export type XHRInterface<R> = {
   sendRequest(params: {
-    type: RequestMethod;
+    method: RequestMethod;
     url: string;
     data?: Record<string, any>;
     config?: any;

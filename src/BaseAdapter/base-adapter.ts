@@ -150,130 +150,66 @@ export abstract class BaseAdapter {
   static readonly POST_RESPONSE_TYPE_DEF: AllDataTypes = DataType.Unknown;
   static readonly PUT_RESPONSE_TYPE_DEF: AllDataTypes = DataType.Unknown;
 
-  static async delete<T extends typeof BaseAdapter>(
-    this: T,
-    ...args: ArgsFor<T, "DELETE">
-  ): ResultFor<T, "DELETE"> {
+  private static async sendRequest<
+    T extends typeof BaseAdapter,
+    M extends RequestMethod
+  >(this: T, method: M, args: ArgsFor<T, M>): ResultFor<T, M> {
     const { urlParameters, config, data } = this.parseArguments(args);
     const url = this.generateUrl(urlParameters);
 
-    this.validateRequest(data, "DELETE");
+    this.validateRequest(data, method);
 
     const response = await this.xhr.sendRequest({
-      type: "DELETE",
+      method: method,
       url,
       config,
       data,
     });
 
-    await this.validateResponse(response, "DELETE");
+    await this.validateResponse(response, method);
 
-    // @ts-expect-error
-    return response as T["xhr"]["sendRequest"];
+    return response;
+  }
+
+  static async delete<T extends typeof BaseAdapter>(
+    this: T,
+    ...args: ArgsFor<T, "DELETE">
+  ): ResultFor<T, "DELETE"> {
+    return this.sendRequest("DELETE", args);
   }
 
   static async get<T extends typeof BaseAdapter>(
     this: T,
     ...args: ArgsFor<T, "GET">
   ): ResultFor<T, "GET"> {
-    const { urlParameters, config, data } = this.parseArguments(args);
-    const url = this.generateUrl(urlParameters);
-
-    this.validateRequest(data, "GET");
-
-    const response = await this.xhr.sendRequest({
-      type: "GET",
-      url,
-      config,
-      data,
-    });
-
-    await this.validateResponse(response, "GET");
-
-    return response;
+    return this.sendRequest("GET", args);
   }
 
   static async options<T extends typeof BaseAdapter>(
     this: T,
     ...args: ArgsFor<T, "OPTIONS">
   ): ResultFor<T, "OPTIONS"> {
-    const { urlParameters, config, data } = this.parseArguments(args);
-    const url = this.generateUrl(urlParameters);
-
-    this.validateRequest(data, "OPTIONS");
-
-    const response = await this.xhr.sendRequest({
-      type: "OPTIONS",
-      url,
-      config,
-      data,
-    });
-
-    await this.validateResponse(response, "OPTIONS");
-
-    return response;
+    return this.sendRequest("OPTIONS", args);
   }
 
   static async patch<T extends typeof BaseAdapter>(
     this: T,
     ...args: ArgsFor<T, "PATCH">
   ): ResultFor<T, "PATCH"> {
-    const { urlParameters, config, data } = this.parseArguments(args);
-    const url = this.generateUrl(urlParameters);
-
-    this.validateRequest(data, "PATCH");
-
-    const response = await this.xhr.sendRequest({
-      type: "PATCH",
-      url,
-      config,
-      data,
-    });
-
-    await this.validateResponse(response, "PATCH");
-
-    return response;
+    return this.sendRequest("PATCH", args);
   }
 
   static async post<T extends typeof BaseAdapter>(
     this: T,
     ...args: ArgsFor<T, "POST">
   ): ResultFor<T, "POST"> {
-    const { urlParameters, config, data } = this.parseArguments(args);
-    const url = this.generateUrl(urlParameters);
-
-    this.validateRequest(data, "POST");
-
-    const response = await this.xhr.sendRequest({
-      type: "POST",
-      url,
-      config,
-      data,
-    });
-
-    await this.validateResponse(response, "POST");
-
-    return response;
+    return this.sendRequest("POST", args);
   }
 
   static async put<T extends typeof BaseAdapter>(
     this: T,
     ...args: ArgsFor<T, "PUT">
   ): ResultFor<T, "PUT"> {
-    const { urlParameters, config, data } = this.parseArguments(args);
-    const url = this.generateUrl(urlParameters);
-
-    this.validateRequest(data, "PUT");
-
-    const response = await this.xhr.sendRequest({
-      type: "PUT",
-      url,
-      config,
-      data,
-    });
-
-    await this.validateResponse(response, "PUT");
-
-    return response;
+    return this.sendRequest("PUT", args);
   }
 }
