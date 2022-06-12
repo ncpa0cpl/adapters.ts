@@ -1334,11 +1334,6 @@ diff@^5.0.0:
   resolved "https://registry.yarnpkg.com/diff/-/diff-5.0.0.tgz#7ed6ad76d859d030787ec35855f5b1daf31d852b"
   integrity sha512-/VTCrvm5Z0JGty/BWHljh+BAiw3IK+2j87NGMu8Nwc/f48WoDAC395uomO9ZD117ZOBaHmkX1oyLvkVM/aIT3w==
 
-dilswer@^1.0.3:
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/dilswer/-/dilswer-1.0.3.tgz#dc5d1c24fd07b9db712551fe64ae7637bc161255"
-  integrity sha512-/w5Q50rIXzuvl/EORGz0ae4DX6pV8nr7I4KlNxDdWcSoSrFztpeF24bTXc18JgxeGAspeG+74fJtVN+YYR17Tw==
-
 dilswer@^1.2.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/dilswer/-/dilswer-1.2.0.tgz#5d6f2e1c9e2f68ae01f7236aaf3dea0d503da7e4"
@@ -3591,10 +3586,10 @@ typedarray-to-buffer@^3.1.5:
   dependencies:
     is-typedarray "^1.0.0"
 
-typescript@^4.7.0-beta:
-  version "4.7.0-beta"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.7.0-beta.tgz#15952f24d4177479ca3d19f09436ad8c69a30563"
-  integrity sha512-m+CNL8lzHyHDxYYDTI+pm5hw5/bufYVGan2bokPyJY/y9C/4W/PCWMtYZ0vV9fLXbEL57elMeoaz9Evxs8UQ+A==
+typescript@^4.7.3:
+  version "4.7.3"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.7.3.tgz#8364b502d5257b540f9de4c40be84c98e23a129d"
+  integrity sha512-WOkT3XYvrpXx4vMMqlD+8R8R37fZkjyLGlxavMc4iB8lrl8L0DeTcHbYgw/v0N/z9wAFsgBhcsF0ruoySS22mA==
 
 unbox-primitive@^1.0.1:
   version "1.0.1"

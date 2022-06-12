@@ -9,6 +9,7 @@ import type {
   RequestMethod,
   RequestOptions,
   ResultFor,
+  UrlParamsFor,
   XHRInterface,
 } from "./types";
 
@@ -20,10 +21,6 @@ export abstract class BaseAdapter {
     if (!this.urlGenerator) this.urlGenerator = urlTemplate(this.URL_TEMPLATE);
 
     return this.urlGenerator!;
-  }
-
-  private static generateUrl(params: Record<string, string>): string {
-    return this.getUrlGenerator().generate(params);
   }
 
   private static parseArguments<T extends typeof BaseAdapter>(
@@ -153,9 +150,9 @@ export abstract class BaseAdapter {
   private static async sendRequest<
     T extends typeof BaseAdapter,
     M extends RequestMethod
-  >(this: T, method: M, args: ArgsFor<T, M>): ResultFor<T, M> {
+  >(this: T, method: M, args: ArgsFor<T, M>): Promise<ResultFor<T, M>> {
     const { urlParameters, config, data } = this.parseArguments(args);
-    const url = this.generateUrl(urlParameters);
+    const url = this.generateUrl(urlParameters as any);
 
     this.validateRequest(data, method);
 
@@ -171,45 +168,52 @@ export abstract class BaseAdapter {
     return response;
   }
 
+  static generateUrl<T extends typeof BaseAdapter>(
+    this: T,
+    params: UrlParamsFor<T>
+  ): string {
+    return this.getUrlGenerator().generate(params);
+  }
+
   static async delete<T extends typeof BaseAdapter>(
     this: T,
     ...args: ArgsFor<T, "DELETE">
-  ): ResultFor<T, "DELETE"> {
+  ): Promise<ResultFor<T, "DELETE">> {
     return this.sendRequest("DELETE", args);
   }
 
   static async get<T extends typeof BaseAdapter>(
     this: T,
     ...args: ArgsFor<T, "GET">
-  ): ResultFor<T, "GET"> {
+  ): Promise<ResultFor<T, "GET">> {
     return this.sendRequest("GET", args);
   }
 
   static async options<T extends typeof BaseAdapter>(
     this: T,
     ...args: ArgsFor<T, "OPTIONS">
-  ): ResultFor<T, "OPTIONS"> {
+  ): Promise<ResultFor<T, "OPTIONS">> {
     return this.sendRequest("OPTIONS", args);
   }
 
   static async patch<T extends typeof BaseAdapter>(
     this: T,
     ...args: ArgsFor<T, "PATCH">
-  ): ResultFor<T, "PATCH"> {
+  ): Promise<ResultFor<T, "PATCH">> {
     return this.sendRequest("PATCH", args);
   }
 
   static async post<T extends typeof BaseAdapter>(
     this: T,
     ...args: ArgsFor<T, "POST">
-  ): ResultFor<T, "POST"> {
+  ): Promise<ResultFor<T, "POST">> {
     return this.sendRequest("POST", args);
   }
 
   static async put<T extends typeof BaseAdapter>(
     this: T,
     ...args: ArgsFor<T, "PUT">
-  ): ResultFor<T, "PUT"> {
+  ): Promise<ResultFor<T, "PUT">> {
     return this.sendRequest("PUT", args);
   }
 }

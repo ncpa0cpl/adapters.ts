@@ -29,7 +29,7 @@ type ConfigFor<I extends typeof BaseAdapter> = Exclude<
   undefined
 >;
 
-type UrlParamsFor<I extends typeof BaseAdapter> = UrlLiteralParams<
+export type UrlParamsFor<I extends typeof BaseAdapter> = UrlLiteralParams<
   I["URL_TEMPLATE"]
 >;
 
@@ -118,7 +118,7 @@ export type ResultTypeFor<
 export type ResultFor<
   A extends typeof BaseAdapter,
   T extends RequestMethod
-> = Promise<
+> = Awaited<
   ReturnType<
     $<
       // @ts-expect-error
