@@ -1,3 +1,4 @@
+import { DataType } from "dilswer";
 import { AxiosAdapter, AxiosXHR } from "./AxiosAdapter";
 import {
   ArgsFor,
@@ -9,6 +10,7 @@ import {
 import { FetchAdapter, FetchXHR } from "./FetchAdapter";
 
 export {
+  DataType,
   AxiosAdapter,
   AxiosXHR,
   BaseAdapter,
@@ -21,6 +23,7 @@ export {
 };
 
 export default {
+  DataType,
   AxiosAdapter,
   AxiosXHR,
   BaseAdapter,
