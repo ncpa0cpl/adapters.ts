@@ -64,7 +64,7 @@ type ArgsTuple<
     ]
   : [
       queryParams: Params,
-      options?: {
+      options: {
         config?: Config;
         data: Data;
       }
