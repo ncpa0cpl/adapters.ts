@@ -12,6 +12,7 @@
     "jest": "^27.5.1",
     "prettier": "^2.6.2",
     "prettier-plugin-jsdoc": "^0.3.38",
+    "git-hook-tasks": "ncpa0cpl/git-hook-tasks",
     "typescript": "^4.7.3"
   },
   "name": "adapters.ts",
@@ -35,9 +36,10 @@
     "email": "szymonb21@gmail.com"
   },
   "dependencies": {
-    "axios": "^0.26.1",
     "dilswer": "^1.2.0",
-    "git-hook-tasks": "ncpa0cpl/git-hook-tasks",
     "url-templater.ts": "^1.1.0"
+  },
+  "peerDependencies": {
+    "axios": "^0.26.1"
   }
 }

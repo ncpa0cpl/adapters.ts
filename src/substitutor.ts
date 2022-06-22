@@ -4,7 +4,7 @@ import type { FetchResponse } from "./FetchAdapter/fetch-xhr";
 /* eslint-disable max-len */
 declare const index: unique symbol;
 
-/** Placeholder representing an indexed type variable. */
+/** Placeholder representing an request payload. */
 export interface _<N extends number = 0> {
   [index]: N;
 }

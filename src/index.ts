@@ -8,8 +8,10 @@ import {
   XHRInterface,
 } from "./BaseAdapter";
 import { FetchAdapter, FetchXHR } from "./FetchAdapter";
+import type { _ } from "./substitutor";
 
 export {
+  _,
   DataType,
   AxiosAdapter,
   AxiosXHR,
