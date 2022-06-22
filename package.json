@@ -25,11 +25,25 @@
     "test:jest": "jest --coverage",
     "test:prettier": "prettier --check ./src/*"
   },
-  "keywords": [],
+  "keywords": [
+    "http",
+    "xhr",
+    "fetch",
+    "ajax",
+    "request",
+    "typesafe",
+    "validation",
+    "post",
+    "get",
+    "put",
+    "delete",
+    "patch",
+    "endpoint"
+  ],
   "repository": {
     "url": "https://github.com/ncpa0cpl/adapters.ts"
   },
-  "description": "",
+  "description": "Quick, easy and type-safe way for declarative http endpoint definitions.",
   "license": "MIT",
   "author": {
     "name": "Szymon Bretner (ncpa0cpl)",
