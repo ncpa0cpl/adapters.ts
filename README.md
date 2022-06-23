@@ -17,7 +17,8 @@ but any http client library can be used with `adapters.ts`.
 import { AxiosAdapter } from "adapters.ts";
 
 class SwapiStarship extends AxiosAdapter {
-  static URL_TEMPLATE = "https://swapi.dev/api/starships/{id}";
+  // must be a readonly
+  static readonly URL_TEMPLATE = "https://swapi.dev/api/starships/{id}";
 }
 
 // SwapiStarship: {
@@ -43,7 +44,7 @@ SwapiStarship.get({ id: "1" }).then(
 import { AxiosAdapter, DataType } from "adapters.ts";
 
 class SwapiStarship extends AxiosAdapter {
-  static URL_TEMPLATE = "https://swapi.dev/api/starships/{id}";
+  static readonly URL_TEMPLATE = "https://swapi.dev/api/starships/{id}";
 
   static GET_RESPONSE_TYPE_DEF = DataType.RecordOf({
     name: DataType.String,
@@ -76,7 +77,7 @@ SwapiStarship.get({ id: "1" }).then(
 import { AxiosAdapter, DataType } from "adapters.ts";
 
 class SwapiStarship extends AxiosAdapter {
-  static URL_TEMPLATE = "https://swapi.dev/api/starships";
+  static readonly URL_TEMPLATE = "https://swapi.dev/api/starships";
 
   static POST_REQUEST_TYPE_DEF = DataType.RecordOf({
     name: DataType.String,
@@ -116,7 +117,7 @@ SwapiStarship.post({
 import { AxiosAdapter } from "adapters.ts";
 
 class MyAdapter extends AxiosAdapter {
-  static URL_TEMPLATE = "https://url-goes.here";
+  static readonly URL_TEMPLATE = "https://url-goes.here";
 
   // set this to true to validate all incoming requests against
   // the below type definitions, or to false to not validate at all
