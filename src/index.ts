@@ -1,34 +1,11 @@
-import { DataType } from "dilswer";
-import { AxiosAdapter, AxiosXHR } from "./AxiosAdapter";
-import {
-  ArgsFor,
-  BaseAdapter,
-  RequestMethod,
-  ResultFor,
-  XHRInterface,
-} from "./BaseAdapter";
-import { FetchAdapter, FetchXHR } from "./FetchAdapter";
-import type { _ } from "./substitutor";
-
 export {
-  _,
-  DataType,
-  AxiosAdapter,
-  AxiosXHR,
-  BaseAdapter,
-  FetchAdapter,
-  FetchXHR,
-  ArgsFor,
-  RequestMethod,
-  ResultFor,
-  XHRInterface,
-};
-
-export default {
-  DataType,
-  AxiosAdapter,
-  AxiosXHR,
-  BaseAdapter,
-  FetchAdapter,
-  FetchXHR,
-};
+  adapter,
+  Adapter,
+  type AdapterOptions,
+  type RequestConfig,
+} from "./adapter";
+export { AdapterRequestError } from "./request-error";
+export type {
+  AdapterEndpoint,
+  AdapterEndpointConfig,
+} from "./adapter-endpoint";
