@@ -331,10 +331,16 @@ export class AdapterEndpoint<
     );
   }
 
-  url(params: UrlLiteralParams<Url>): string {
+  url(
+    params: UrlLiteralParams<Url>,
+    config?: Pick<RequestConfigBase, "baseURL" | "basePath">,
+  ): string {
     const templeRes = this.urlTemplate.generate(params);
 
-    let u = this.adapter["prepareUrl"](templeRes, {});
+    let u = this.adapter["prepareUrl"](
+      templeRes,
+      extend(this.adapter["baseConfig"], config),
+    );
 
     const afterBuildUrl = this.adapter["afterBuildUrl"];
     if (afterBuildUrl) {
