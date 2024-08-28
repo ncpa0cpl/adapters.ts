@@ -1,20 +1,14 @@
 {
-  "devDependencies": {
-    "dprint": "^0.47.2",
-    "oxlint": "^0.9.0",
-    "vitest": "^2.0.5"
-  },
   "name": "adapters.ts",
-  "version": "1.0.2",
-  "main": "./dist/index.js",
-  "scripts": {
-    "build": "tsc",
-    "test:lint": "oxlint .",
-    "test:tsc": "tsc --noEmit",
-    "test:unit": "vitest run",
-    "test:fmt": "dprint check",
-    "fmt": "dprint fmt"
-  },
+  "version": "2.0.0",
+  "main": "./dist/esm/index.mjs",
+  "types": "./dist/types/index.d.ts",
+  "files": [
+    "dist",
+    "README",
+    "LICENSE",
+    "package.json"
+  ],
   "keywords": [
     "http",
     "xhr",
@@ -39,8 +33,23 @@
     "name": "Szymon Bretner (ncpa0cpl)",
     "email": "szymonb21@gmail.com"
   },
+  "scripts": {
+    "build": "node ./scripts/build.mjs",
+    "test:lint": "oxlint .",
+    "test:tsc": "tsc --noEmit",
+    "test:unit": "vitest run",
+    "test:fmt": "dprint check",
+    "fmt": "dprint fmt"
+  },
   "dependencies": {
     "url-templater.ts": "^1.1.0"
+  },
+  "devDependencies": {
+    "@ncpa0cpl/nodepack": "^2.3.3",
+    "dprint": "^0.47.2",
+    "oxlint": "^0.9.0",
+    "typescript": "4.9.4",
+    "vitest": "^2.0.5"
   },
   "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610"
 }
