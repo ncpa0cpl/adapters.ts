@@ -330,4 +330,8 @@ export class AdapterEndpoint<
         : { validate: this.params.validate?.options },
     );
   }
+
+  url(params: UrlLiteralParams<Url>): string {
+    return this.urlTemplate.generate(params);
+  }
 }
