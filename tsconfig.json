@@ -8,6 +8,6 @@
     "noUnusedLocals": true,
     "noUncheckedIndexedAccess": true,
     "esModuleInterop": true,
-    "skipLibCheck": true,
+    "skipLibCheck": true
   }
 }

@@ -36,8 +36,8 @@ describe("Adapter.endpoint()", () => {
     fetchMock.mockImplementation(async (url, options) => {
       console.log(url);
       if (
-        url === "http://127.0.0.1/api/list?limit=16&page=69" &&
-        options?.method === "GET"
+        url === "http://127.0.0.1/api/list?limit=16&page=69"
+        && options?.method === "GET"
       ) {
         return Response.json([{}]);
       }
@@ -60,14 +60,14 @@ describe("Adapter.endpoint()", () => {
   it("parametrized GET endpoint", async () => {
     fetchMock.mockImplementation(async (url, options) => {
       if (
-        url === "http://127.0.0.1/api/product/1" &&
-        options?.method === "GET"
+        url === "http://127.0.0.1/api/product/1"
+        && options?.method === "GET"
       ) {
         return Response.json({ id: 1 });
       }
       if (
-        url === "http://127.0.0.1/api/product/2" &&
-        options?.method === "GET"
+        url === "http://127.0.0.1/api/product/2"
+        && options?.method === "GET"
       ) {
         return Response.json({ id: 2 });
       }
@@ -91,8 +91,8 @@ describe("Adapter.endpoint()", () => {
   it("simple POST endpoint", async () => {
     fetchMock.mockImplementation(async (url, options) => {
       if (
-        url === "http://127.0.0.1/api/product" &&
-        options?.method === "POST"
+        url === "http://127.0.0.1/api/product"
+        && options?.method === "POST"
       ) {
         return Response.json({ ...JSON.parse(options.body as string), id: 1 });
       }
@@ -102,8 +102,7 @@ describe("Adapter.endpoint()", () => {
     const e = adapter.endpoint({
       url: "/api/product",
       validate: {
-        post: (data: unknown): data is Array<{ id: number; name: string }> =>
-          true,
+        post: (data: unknown): data is Array<{ id: number; name: string }> => true,
       },
       validateRequest: {
         post: (data: unknown): data is { name: string } => true,
@@ -180,10 +179,10 @@ describe("Adapter.endpoint()", () => {
 
     const validate = (v: unknown): v is { prop: string } => {
       return (
-        typeof v === "object" &&
-        v !== null &&
-        "prop" in v &&
-        typeof v["prop"] === "string"
+        typeof v === "object"
+        && v !== null
+        && "prop" in v
+        && typeof v["prop"] === "string"
       );
     };
 
@@ -211,10 +210,10 @@ describe("Adapter.endpoint()", () => {
 
     const validate = (v: unknown): v is { prop: string } => {
       return (
-        typeof v === "object" &&
-        v !== null &&
-        "prop" in v &&
-        typeof v["prop"] === "string"
+        typeof v === "object"
+        && v !== null
+        && "prop" in v
+        && typeof v["prop"] === "string"
       );
     };
 

@@ -14,7 +14,7 @@ adapter.get("/api/films", {
   baseURL: "https://swapi.dev/",
 }).then(response => {
   console.log(response.data);
-})
+});
 
 // post request
 adapter.post("/api/films", {
@@ -33,11 +33,12 @@ import { adapter } from "adapters.ts";
 adapter.get("/api/films", {
   baseURL: "https://swapi.dev/",
   validate: (data): data is { title: string }[] => {
-    return Array.isArray(data) && data.every(film => typeof film.title === "string");
+    return Array.isArray(data)
+      && data.every(film => typeof film.title === "string");
   },
 }).then(response => {
   console.log(response.data);
-})
+});
 ```
 
 ### Endpoint defintions
@@ -57,7 +58,8 @@ const film = swapi.endpoint({
   validate: {
     // shape of GET response
     get: (data): data is { id: string; title: string } => {
-      return typeof data === "object" && typeof data.title === "string" && typeof data.id === "string";
+      return typeof data === "object" && typeof data.title === "string"
+        && typeof data.id === "string";
     },
     // shape of PATCH response
     patch: (data): data is { ok: boolean } => {
@@ -69,7 +71,7 @@ const film = swapi.endpoint({
     patch: (data): data is { title: string } => {
       return typeof data === "object" && typeof data.title === "string";
     },
-  }
+  },
 });
 
 // sends a GET request to https://swapi.dev/api/film/1?fields=id,title

@@ -5,9 +5,7 @@ export type FetchResponse<T> = Response & {
   json(): T;
 };
 
-export class FetchXHR
-  implements XHRInterface<DefaultXhrReqConfig, FetchResponse<any>>
-{
+export class FetchXHR implements XHRInterface<DefaultXhrReqConfig, FetchResponse<any>> {
   constructor() {}
 
   async sendRequest<T>(params: {

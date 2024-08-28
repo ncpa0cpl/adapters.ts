@@ -5,7 +5,7 @@ export class AdapterRequestError extends Error {
     return err instanceof AdapterRequestError;
   }
 
-  public declare cause?: unknown;
+  declare public cause?: unknown;
 
   constructor(
     public readonly config: RequestConfig<any, any> | undefined,

@@ -1,9 +1,5 @@
 import { UrlLiteralParams, urlTemplate } from "url-templater.ts";
-import {
-  RequestConfigBase,
-  type Adapter,
-  type DefaultXhrReqConfig,
-} from "./adapter";
+import { type Adapter, type DefaultXhrReqConfig, RequestConfigBase } from "./adapter";
 import { AdapterRequestError as AdapterRequestError } from "./request-error";
 import { extend } from "./utils/extend";
 
@@ -41,49 +37,48 @@ export interface AdapterEndpointConfig<
   };
 }
 
-type SearchParamsRecord<SearchParams extends readonly string[]> = {
-  [K in SearchParams[number] as K extends `?${infer PName}`
-    ? PName
-    : never]?: string;
-} & {
-  [K in SearchParams[number] as K extends `?${infer PName}`
-    ? never
-    : K]: string;
-};
+type SearchParamsRecord<SearchParams extends readonly string[]> =
+  & {
+    [
+      K in SearchParams[number] as K extends `?${infer PName}` ? PName
+        : never
+    ]?: string;
+  }
+  & {
+    [
+      K in SearchParams[number] as K extends `?${infer PName}` ? never
+        : K
+    ]: string;
+  };
 
 type ConfigFor<
   SearchParams extends readonly string[] = [],
   Body = never,
   XhrReqConfig = DefaultXhrReqConfig,
-> = SearchParams["length"] extends 0
-  ? [Body] extends [never]
-    ? [config?: RequestConfigBase<XhrReqConfig>]
-    : [config: RequestConfigBase<XhrReqConfig> & { body: Body }]
-  : [Body] extends [never]
-    ? [
-        config: RequestConfigBase<XhrReqConfig> & {
-          searchParams: SearchParamsRecord<SearchParams>;
-        },
-      ]
-    : [
-        config: RequestConfigBase<XhrReqConfig> & {
-          searchParams: SearchParamsRecord<SearchParams>;
-          body: Body;
-        },
-      ];
+> = SearchParams["length"] extends 0 ? [Body] extends [never] ? [config?: RequestConfigBase<XhrReqConfig>]
+  : [config: RequestConfigBase<XhrReqConfig> & { body: Body }]
+  : [Body] extends [never] ? [
+      config: RequestConfigBase<XhrReqConfig> & {
+        searchParams: SearchParamsRecord<SearchParams>;
+      },
+    ]
+  : [
+    config: RequestConfigBase<XhrReqConfig> & {
+      searchParams: SearchParamsRecord<SearchParams>;
+      body: Body;
+    },
+  ];
 
 type RequestArguments<
   Url extends string,
   SearchParams extends string[] = [],
   XhrReqConfig = DefaultXhrReqConfig,
   Body = never,
-> =
-  UrlLiteralParams<Url> extends Record<string, never>
-    ? ConfigFor<SearchParams, Body, XhrReqConfig>
-    : [
-        queryParams: UrlLiteralParams<Url>,
-        ...ConfigFor<SearchParams, Body, XhrReqConfig>,
-      ];
+> = UrlLiteralParams<Url> extends Record<string, never> ? ConfigFor<SearchParams, Body, XhrReqConfig>
+  : [
+    queryParams: UrlLiteralParams<Url>,
+    ...ConfigFor<SearchParams, Body, XhrReqConfig>,
+  ];
 
 type ResolvedParams<Url extends string> = {
   urlParams?: UrlLiteralParams<Url>;
@@ -132,8 +127,8 @@ export class AdapterEndpoint<
   private validateSearchParams(
     config:
       | (RequestConfigBase<XhrReqConfig> & {
-          searchParams?: Record<string, string>;
-        })
+        searchParams?: Record<string, string>;
+      })
       | undefined,
   ) {
     if (!this.params.searchParams || this.params.searchParams.length === 0) {
@@ -147,9 +142,9 @@ export class AdapterEndpoint<
       }
 
       if (
-        !config ||
-        !config?.searchParams ||
-        config.searchParams[paramName] == null
+        !config
+        || !config?.searchParams
+        || config.searchParams[paramName] == null
       ) {
         throw new AdapterRequestError(
           config,

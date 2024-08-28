@@ -58,8 +58,8 @@ describe("Adapter", () => {
   it("GET with search params", async () => {
     fetchMock.mockImplementation(async (url, options) => {
       if (
-        url === "http://127.0.0.1/api/list?page=2&limit=12" &&
-        options?.method === "GET"
+        url === "http://127.0.0.1/api/list?page=2&limit=12"
+        && options?.method === "GET"
       ) {
         return Response.json(["a", "b", "c"]);
       }
@@ -135,8 +135,8 @@ describe("Adapter", () => {
     it("baseURL", async () => {
       fetchMock.mockImplementation(async (url, options) => {
         if (
-          url === "https://my-domain.com/api/list" &&
-          options?.method === "GET"
+          url === "https://my-domain.com/api/list"
+          && options?.method === "GET"
         ) {
           return Response.json(["a", "b", "c"]);
         }
@@ -168,8 +168,8 @@ describe("Adapter", () => {
     it("baseURL + basePath", async () => {
       fetchMock.mockImplementation(async (url, options) => {
         if (
-          url === "https://my-domain.com/api/list" &&
-          options?.method === "GET"
+          url === "https://my-domain.com/api/list"
+          && options?.method === "GET"
         ) {
           return Response.json(["a", "b", "c"]);
         }
@@ -254,8 +254,8 @@ describe("Adapter", () => {
 
       fetchMock.mockImplementation(async (url, options) => {
         if (
-          url === "https://my-domain.com/api/list" &&
-          options?.method === "GET"
+          url === "https://my-domain.com/api/list"
+          && options?.method === "GET"
         ) {
           return Response.json(["a", "b", "c"]);
         }
@@ -292,8 +292,8 @@ describe("Adapter", () => {
 
       fetchMock.mockImplementation(async (url, options) => {
         if (
-          url === "https://my-domain.com/api/list" &&
-          options?.method === "GET"
+          url === "https://my-domain.com/api/list"
+          && options?.method === "GET"
         ) {
           return Response.json(["a", "b", "c"]);
         }
