@@ -33,6 +33,7 @@ export interface AdapterOptions<XhrReqConfig = DefaultXhrReqConfig> {
   onAfterResponse?: (
     response: AdapterResponse<any>,
   ) => MaybePromise<void | AdapterResponse>;
+  onAfterBuildUrl?: (url: URL) => void | URL;
 }
 
 export interface RequestConfigBase<XhrReqConfig = DefaultXhrReqConfig> {
@@ -67,6 +68,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
   private readonly baseHeaders: Headers;
   private readonly beforeRequest;
   private readonly afterResponse;
+  private readonly afterBuildUrl;
 
   private constructor(
     options?: AdapterOptions<XhrReqConfig>,
@@ -104,6 +106,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
 
     this.beforeRequest = options?.onBeforeRequest;
     this.afterResponse = options?.onAfterResponse;
+    this.afterBuildUrl = options?.onAfterBuildUrl;
   }
 
   private getBaseUrl(config?: RequestConfigBase<XhrReqConfig>) {
@@ -269,6 +272,13 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
       if (config.searchParams) {
         const sp = new URLSearchParams(config.searchParams);
         u.search = sp.toString();
+      }
+
+      if (this.afterBuildUrl) {
+        const override = this.afterBuildUrl(u);
+        if (override) {
+          u = override;
+        }
       }
 
       if (this.beforeRequest) {

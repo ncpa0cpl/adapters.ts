@@ -1,3 +1,9 @@
+declare global {
+  interface AdaptersTs {}
+}
+
+type ErrType<T> = AdaptersTs extends { TypedPromises: true } ? T : any;
+
 /**
  * Represents the completion of an asynchronous operation
  */
@@ -8,13 +14,13 @@ export interface TypedPromise<T, Err = unknown> extends Promise<T> {
    * @param onrejected The callback to execute when the Promise is rejected.
    * @returns A Promise for the completion of which ever callback is executed.
    */
-  then<TResult1 = T, TResult2 = never, ErrResult = unknown>(
+  then<TResult1 = T, TResult2 = never, ErrResult = Err>(
     onfulfilled?:
       | ((value: T) => TResult1 | PromiseLike<TResult1>)
       | undefined
       | null,
     onrejected?:
-      | ((reason: Err) => TResult2 | PromiseLike<TResult2>)
+      | ((reason: ErrType<Err>) => TResult2 | PromiseLike<TResult2>)
       | undefined
       | null,
   ): TypedPromise<TResult1 | TResult2, ErrResult>;
@@ -26,7 +32,7 @@ export interface TypedPromise<T, Err = unknown> extends Promise<T> {
    */
   catch<TResult = never, ErrResult = unknown>(
     onrejected?:
-      | ((reason: Err) => TResult | PromiseLike<TResult>)
+      | ((reason: ErrType<Err>) => TResult | PromiseLike<TResult>)
       | undefined
       | null,
   ): TypedPromise<T | TResult, ErrResult>;

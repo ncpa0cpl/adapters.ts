@@ -332,6 +332,18 @@ export class AdapterEndpoint<
   }
 
   url(params: UrlLiteralParams<Url>): string {
-    return this.urlTemplate.generate(params);
+    const templeRes = this.urlTemplate.generate(params);
+
+    let u = this.adapter["prepareUrl"](templeRes, {});
+
+    const afterBuildUrl = this.adapter["afterBuildUrl"];
+    if (afterBuildUrl) {
+      const override = afterBuildUrl(u);
+      if (override) {
+        u = override;
+      }
+    }
+
+    return u.toString();
   }
 }
