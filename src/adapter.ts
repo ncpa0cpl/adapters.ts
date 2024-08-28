@@ -45,8 +45,7 @@ export interface RequestConfigBase<XhrReqConfig = DefaultXhrReqConfig> {
 }
 
 export interface RequestConfig<XhrReqConfig = DefaultXhrReqConfig, T = unknown>
-  extends RequestConfigBase<XhrReqConfig>
-{
+  extends RequestConfigBase<XhrReqConfig> {
   validate?: (data: unknown) => data is T;
   searchParams?: URLSearchParams | string[][] | Record<string, string>;
 }
@@ -239,7 +238,9 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     } catch (error) {
       if (attemptsLeft > 0) {
         if (config.retryDelay) {
-          await new Promise((resolve) => setTimeout(resolve, config.retryDelay));
+          await new Promise((resolve) =>
+            setTimeout(resolve, config.retryDelay),
+          );
         }
         return this.requestInternal(
           method,
@@ -259,6 +260,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     url: string | URL,
     config?: RequestConfig<XhrReqConfig, T>,
     body?: any,
+    // @ts-expect-error
   ): TypedPromise<AdapterResponse<XhrResp, T>, AdapterRequestError> {
     try {
       config = this.createRequestConfig(config);
