@@ -13,7 +13,6 @@ export class AdapterRequestError extends Error {
     status?: number,
     cause?: any,
   ) {
-    console.log(cause);
     super(reason, { cause });
     this.name = "AdapterRequestError";
   }

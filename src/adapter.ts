@@ -3,6 +3,7 @@ import { AdapterRequestError } from "./request-error";
 import { AdapterResponse } from "./response";
 import { TypedPromise } from "./typed-promise";
 import { extend } from "./utils/extend";
+import { Rejects } from "./utils/rejects-decorator";
 import { trimCharEnd, trimCharStart } from "./utils/trim-char";
 import { RequestMethod, XHRInterface } from "./xhr-interface";
 import { FetchXHR } from "./xhr/fetch";
@@ -45,7 +46,8 @@ export interface RequestConfigBase<XhrReqConfig = DefaultXhrReqConfig> {
 }
 
 export interface RequestConfig<XhrReqConfig = DefaultXhrReqConfig, T = unknown>
-  extends RequestConfigBase<XhrReqConfig> {
+  extends RequestConfigBase<XhrReqConfig>
+{
   validate?: (data: unknown) => data is T;
   searchParams?: URLSearchParams | string[][] | Record<string, string>;
 }
@@ -238,9 +240,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     } catch (error) {
       if (attemptsLeft > 0) {
         if (config.retryDelay) {
-          await new Promise((resolve) =>
-            setTimeout(resolve, config.retryDelay),
-          );
+          await new Promise((resolve) => setTimeout(resolve, config.retryDelay));
         }
         return this.requestInternal(
           method,
@@ -300,10 +300,12 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     }
   }
 
+  @Rejects
   get<T = unknown>(url: string, config?: RequestConfig<XhrReqConfig, T>) {
     return this.request("GET", url, config);
   }
 
+  @Rejects
   post<T = unknown>(
     url: string,
     config: RequestConfig<XhrReqConfig, T> & { body: any },
@@ -311,6 +313,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     return this.request("POST", url, config, config.body);
   }
 
+  @Rejects
   patch<T = unknown>(
     url: string,
     config: RequestConfig<XhrReqConfig, T> & { body: any },
@@ -318,6 +321,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     return this.request("PATCH", url, config, config.body);
   }
 
+  @Rejects
   put<T = unknown>(
     url: string,
     config: RequestConfig<XhrReqConfig, T> & { body: any },
@@ -325,6 +329,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     return this.request("PUT", url, config, config.body);
   }
 
+  @Rejects
   delete<T = unknown>(
     url: string,
     config: RequestConfig<XhrReqConfig, T> & { body: any },
@@ -332,6 +337,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     return this.request("DELETE", url, config, config.body);
   }
 
+  @Rejects
   options<T = unknown>(url: string, config: RequestConfig<XhrReqConfig, T>) {
     return this.request("OPTIONS", url, config);
   }

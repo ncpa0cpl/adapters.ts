@@ -2,6 +2,7 @@ import { UrlLiteralParams, urlTemplate } from "url-templater.ts";
 import { type Adapter, type DefaultXhrReqConfig, RequestConfigBase } from "./adapter";
 import { AdapterRequestError as AdapterRequestError } from "./request-error";
 import { extend } from "./utils/extend";
+import { Rejects } from "./utils/rejects-decorator";
 
 export type ValidateFn<T> = (data: unknown) => data is T;
 
@@ -175,6 +176,7 @@ export class AdapterEndpoint<
     };
   }
 
+  @Rejects
   get(...args: RequestArguments<Url, SearchParams, XhrReqConfig>) {
     const { config, urlParams } = this.resolveArgs(args);
     this.validateSearchParams(config);
@@ -195,6 +197,7 @@ export class AdapterEndpoint<
     );
   }
 
+  @Rejects
   post(...args: RequestArguments<Url, SearchParams, XhrReqConfig, PostReqT>) {
     const { config, urlParams } = this.resolveArgs(args);
     this.validateSearchParams(config);
@@ -222,6 +225,7 @@ export class AdapterEndpoint<
     );
   }
 
+  @Rejects
   patch(...args: RequestArguments<Url, SearchParams, XhrReqConfig, PatchReqT>) {
     const { config, urlParams } = this.resolveArgs(args);
     this.validateSearchParams(config);
@@ -249,6 +253,7 @@ export class AdapterEndpoint<
     );
   }
 
+  @Rejects
   put(...args: RequestArguments<Url, SearchParams, XhrReqConfig, PutReqT>) {
     const { config, urlParams } = this.resolveArgs(args);
     this.validateSearchParams(config);
@@ -276,6 +281,7 @@ export class AdapterEndpoint<
     );
   }
 
+  @Rejects
   delete(
     ...args: RequestArguments<Url, SearchParams, XhrReqConfig, DeleteReqT>
   ) {
@@ -305,6 +311,7 @@ export class AdapterEndpoint<
     );
   }
 
+  @Rejects
   options(...args: RequestArguments<Url, SearchParams, XhrReqConfig>) {
     const { config, urlParams } = this.resolveArgs(args);
     this.validateSearchParams(config);

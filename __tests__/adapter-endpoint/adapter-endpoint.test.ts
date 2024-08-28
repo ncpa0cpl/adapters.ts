@@ -34,7 +34,6 @@ describe("Adapter.endpoint()", () => {
 
   it("simple GET endpoint with searchParams", async () => {
     fetchMock.mockImplementation(async (url, options) => {
-      console.log(url);
       if (
         url === "http://127.0.0.1/api/list?limit=16&page=69"
         && options?.method === "GET"
