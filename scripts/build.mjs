@@ -9,7 +9,7 @@ async function main() {
     formats: ["esm"],
     outDir: p("dist"),
     srcDir: p("src"),
-    target: "ES6",
+    target: "es2022",
     declarations: true,
     tsConfig: p("tsconfig.json"),
   });

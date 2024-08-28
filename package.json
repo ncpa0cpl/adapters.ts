@@ -1,6 +1,6 @@
 {
   "name": "adapters.ts",
-  "version": "2.0.0",
+  "version": "2.0.0-beta1",
   "main": "./dist/esm/index.mjs",
   "types": "./dist/types/index.d.ts",
   "files": [
@@ -48,11 +48,12 @@
   "devDependencies": {
     "@ncpa0cpl/nodepack": "^2.3.3",
     "dprint": "^0.47.2",
+    "esbuild": "^0.23.1",
+    "git-hook-tasks": "git+https://github.com/ncpa0cpl/git-hook-tasks#0.0.1",
     "husky": "8.0.3",
     "oxlint": "^0.9.0",
     "typescript": "^5.5.4",
-    "vitest": "^2.0.5",
-    "git-hook-tasks": "git+https://github.com/ncpa0cpl/git-hook-tasks#0.0.1"
+    "vitest": "^2.0.5"
   },
   "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610"
 }
