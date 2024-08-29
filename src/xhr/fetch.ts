@@ -57,7 +57,18 @@ export class FetchXHR implements XHRInterface<DefaultXhrReqConfig, FetchResponse
     return [resp as any, resp.status, resp.statusText];
   }
 
-  async extractPayload<T>(response: FetchResponse<T>): Promise<T> {
-    return await response.json();
+  extractPayload<T>(response: FetchResponse<T>): Promise<T> {
+    const contentType = response.headers.get("Content-Type")?.split(";")[0];
+    switch (contentType) {
+      case "application/json":
+        return response.json();
+      case "text/plain":
+        return response.text() as any;
+      case "application/octet-stream":
+        return response.arrayBuffer() as any;
+      case "multipart/form-data":
+        return response.formData() as any;
+    }
+    return Promise.resolve(null as any);
   }
 }
