@@ -209,6 +209,8 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     body?: any,
     attemptsLeft = 0,
   ): Promise<AdapterResponse<XhrResp, T>> {
+    let responseStatus = -1;
+
     try {
       const [abortSignal, clearTimeout] = this.createTimeout(config);
 
@@ -222,6 +224,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
       });
 
       clearTimeout();
+      responseStatus = status;
 
       if (status >= 400 && status < 500) {
         throw new AdapterRequestError(
@@ -257,7 +260,10 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
 
       return resp;
     } catch (error) {
-      if (attemptsLeft > 0) {
+      // only retry if the request was not sent or the response indicates a failure
+      // do not retry if the error is dur to timeout, validation error, payload
+      // extraction error or other local problem
+      if (attemptsLeft > 0 && !(responseStatus >= 200 && responseStatus < 300)) {
         if (config.retryDelay) {
           await new Promise((resolve) => setTimeout(resolve, config.retryDelay));
         }
