@@ -109,6 +109,12 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     this.afterBuildUrl = options?.onAfterBuildUrl;
   }
 
+  private addContentType(h: Headers) {
+    if (!h.has("Content-Type")) {
+      h.set("Content-Type", "application/json;charset=UTF-8");
+    }
+  }
+
   private getBaseUrl(config?: RequestConfigBase<XhrReqConfig>) {
     if (config?.baseURL) {
       return config.baseURL;
@@ -134,10 +140,20 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
   }
 
   private createRequestConfig<T>(
+    method: RequestMethod,
     config?: RequestConfig<XhrReqConfig, T>,
   ): RequestConfig<XhrReqConfig, T> {
     if (!config) {
-      return this.baseConfig as RequestConfig<XhrReqConfig, T>;
+      if (method === "GET" || method === "OPTIONS") {
+        return extend(this.baseConfig, { headers: this.baseHeaders }) as RequestConfig<XhrReqConfig, T>;
+      }
+
+      const headers = new Headers(this.baseHeaders);
+      this.addContentType(headers);
+
+      return extend(this.baseConfig, {
+        headers,
+      }) as RequestConfig<XhrReqConfig, T>;
     }
 
     const finalConfig = extend(
@@ -145,20 +161,20 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
       config,
     );
 
+    finalConfig.headers = new Headers(this.baseHeaders);
     if (config.headers) {
-      const finalHeaders = new Headers(this.baseHeaders);
-      const h = new Headers(config.headers);
-      h.forEach((value, key) => {
-        finalHeaders.set(key, value);
+      new Headers(config.headers).forEach((value, key) => {
+        (finalConfig.headers as Headers).set(key, value);
       });
-      finalConfig.headers = finalHeaders;
+    }
+
+    if (method !== "GET" && method !== "OPTIONS") {
+      this.addContentType(finalConfig.headers);
     }
 
     if (config.xhr) {
-      if (finalConfig.xhr) {
-        finalConfig.xhr = extend(finalConfig.xhr, config.xhr);
-      } else {
-        finalConfig.xhr = config.xhr;
+      if (this.baseConfig.xhr) {
+        finalConfig.xhr = extend(this.baseConfig.xhr, config.xhr);
       }
     }
 
@@ -266,7 +282,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     // @ts-expect-error
   ): TypedPromise<AdapterResponse<XhrResp, T>, AdapterRequestError> {
     try {
-      config = this.createRequestConfig(config);
+      config = this.createRequestConfig(method, config);
 
       let u = this.prepareUrl(url, config);
       if (config.searchParams) {
@@ -318,37 +334,37 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
   @Rejects
   post<T = unknown>(
     url: string,
-    config: RequestConfig<XhrReqConfig, T> & { body: any },
+    config?: RequestConfig<XhrReqConfig, T> & { body?: any },
   ) {
-    return this.request("POST", url, config, config.body);
+    return this.request("POST", url, config, config?.body);
   }
 
   @Rejects
   patch<T = unknown>(
     url: string,
-    config: RequestConfig<XhrReqConfig, T> & { body: any },
+    config?: RequestConfig<XhrReqConfig, T> & { body?: any },
   ) {
-    return this.request("PATCH", url, config, config.body);
+    return this.request("PATCH", url, config, config?.body);
   }
 
   @Rejects
   put<T = unknown>(
     url: string,
-    config: RequestConfig<XhrReqConfig, T> & { body: any },
+    config?: RequestConfig<XhrReqConfig, T> & { body?: any },
   ) {
-    return this.request("PUT", url, config, config.body);
+    return this.request("PUT", url, config, config?.body);
   }
 
   @Rejects
   delete<T = unknown>(
     url: string,
-    config: RequestConfig<XhrReqConfig, T> & { body: any },
+    config?: RequestConfig<XhrReqConfig, T> & { body?: any },
   ) {
-    return this.request("DELETE", url, config, config.body);
+    return this.request("DELETE", url, config, config?.body);
   }
 
   @Rejects
-  options<T = unknown>(url: string, config: RequestConfig<XhrReqConfig, T>) {
+  options<T = unknown>(url: string, config?: RequestConfig<XhrReqConfig, T>) {
     return this.request("OPTIONS", url, config);
   }
 

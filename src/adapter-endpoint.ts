@@ -56,11 +56,13 @@ type ConfigFor<
   SearchParams extends readonly string[] = [],
   Body = never,
   XhrReqConfig = DefaultXhrReqConfig,
-> = SearchParams["length"] extends 0 ? [Body] extends [never] ? [config?: RequestConfigBase<XhrReqConfig>]
+> = SearchParams["length"] extends 0
+  ? [Body] extends [never] ? [config?: RequestConfigBase<XhrReqConfig> & { body?: any }]
   : [config: RequestConfigBase<XhrReqConfig> & { body: Body }]
   : [Body] extends [never] ? [
       config: RequestConfigBase<XhrReqConfig> & {
         searchParams: SearchParamsRecord<SearchParams>;
+        body?: any;
       },
     ]
   : [

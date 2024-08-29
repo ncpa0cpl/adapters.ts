@@ -305,4 +305,113 @@ describe("Adapter", () => {
       expect(e.data).toEqual(["a", "b", "c"]);
     });
   });
+
+  describe("content-type", () => {
+    it("is set on all POST/DELETE/PUT/PATCH requests", async () => {
+      expect.assertions(4);
+
+      fetchMock.mockImplementation(async (url, options) => {
+        expect((options?.headers as Headers).get("Content-Type")).toSatisfy(
+          v => typeof v === "string" && v.startsWith("application/json"),
+          "Content-Type is not set to application/json",
+        );
+
+        return Response.json("ok");
+      });
+
+      await adapter.post("/api/list");
+      await adapter.delete("/api/list");
+      await adapter.put("/api/list");
+      await adapter.patch("/api/list");
+    });
+
+    it("is not being set on GET/OPTIONS requests", async () => {
+      expect.assertions(2);
+
+      fetchMock.mockImplementation(async (url, options) => {
+        expect((options?.headers as Headers).get("Content-Type")).toBeNull();
+
+        return Response.json("ok");
+      });
+
+      await adapter.get("/api/list");
+      await adapter.options("/api/list");
+    });
+
+    it("is not automatically set if overriden by config", async () => {
+      expect.assertions(4);
+
+      fetchMock.mockImplementation(async (url, options) => {
+        expect((options?.headers as Headers).get("Content-Type")).toEqual(
+          "text/plain",
+        );
+
+        return Response.json("ok");
+      });
+
+      await adapter.post("/api/list", { headers: { "Content-Type": "text/plain" } });
+      await adapter.delete("/api/list", { headers: { "Content-Type": "text/plain" } });
+      await adapter.put("/api/list", { headers: { "Content-Type": "text/plain" } });
+      await adapter.patch("/api/list", { headers: { "Content-Type": "text/plain" } });
+    });
+
+    it("when set to application/x-www-form-urlencoded init body is set appropriately", async () => {
+      expect.assertions(3);
+
+      fetchMock.mockImplementation(async (url, options) => {
+        expect((options?.headers as Headers).get("Content-Type")).toEqual(
+          "application/x-www-form-urlencoded",
+        );
+        expect(options?.body).toBeInstanceOf(URLSearchParams);
+        expect((options?.body as URLSearchParams).toString()).toEqual("a=1&b=2");
+
+        return Response.json("ok");
+      });
+
+      await adapter.post("/api/list", {
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: { a: 1, b: 2 },
+      });
+    });
+
+    it("when set to multipart/form-data init body is set appropriately", async () => {
+      expect.assertions(4);
+
+      fetchMock.mockImplementation(async (url, options) => {
+        expect((options?.headers as Headers).get("Content-Type")).toEqual(
+          "multipart/form-data",
+        );
+        expect(options?.body).toBeInstanceOf(FormData);
+        const formData = options?.body as FormData;
+        expect(formData.get("a")).toEqual("1");
+        expect(formData.get("b")).toEqual("2");
+
+        return Response.json("ok");
+      });
+
+      await adapter.post("/api/list", {
+        headers: { "Content-Type": "multipart/form-data" },
+        body: { a: 1, b: 2 },
+      });
+    });
+
+    it("allows to send blobs", async () => {
+      expect.assertions(3);
+
+      fetchMock.mockImplementation(async (url, options) => {
+        expect((options?.headers as Headers).get("Content-Type")).toEqual(
+          "application/octet-stream",
+        );
+        expect(options?.body).toBeInstanceOf(Blob);
+        expect((options?.body as Blob).text()).resolves.toEqual("hello");
+
+        return Response.json("ok");
+      });
+
+      await adapter.post("/api/list", {
+        headers: { "Content-Type": "application/octet-stream" },
+        body: new Blob(["h", "e", "l", "l", "o"]),
+      });
+    });
+  });
 });

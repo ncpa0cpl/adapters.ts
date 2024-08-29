@@ -18,7 +18,32 @@ export class FetchXHR implements XHRInterface<DefaultXhrReqConfig, FetchResponse
   }): Promise<[FetchResponse<T>, number, string]> {
     const init: RequestInit = { ...params.config, method: params.method };
     if (params.body) {
-      init.body = JSON.stringify(params.body);
+      let contentType = params.headers?.get("Content-Type");
+      if (contentType != null) {
+        contentType = contentType.split(";")[0];
+      }
+
+      switch (contentType) {
+        case "application/json":
+          init.body = JSON.stringify(params.body);
+          break;
+        case "text/plain":
+          init.body = String(params.body);
+          break;
+        case "application/x-www-form-urlencoded":
+          init.body = new URLSearchParams(params.body as Record<string, string>);
+          break;
+        case "multipart/form-data":
+          const formData = new FormData();
+          for (const key in params.body) {
+            formData.append(key, params.body[key]);
+          }
+          init.body = formData;
+          break;
+        default:
+          init.body = params.body as BodyInit;
+          break;
+      }
     }
     if (params.headers) {
       init.headers = params.headers;
