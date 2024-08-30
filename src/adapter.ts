@@ -34,6 +34,7 @@ export interface AdapterOptions<XhrReqConfig = DefaultXhrReqConfig> {
     response: AdapterResponse<any>,
   ) => MaybePromise<void | AdapterResponse>;
   onAfterBuildUrl?: (url: URL) => void | URL;
+  onRequestError?: (error: AdapterRequestError) => void | AdapterRequestError;
 }
 
 export interface RequestConfigBase<XhrReqConfig = DefaultXhrReqConfig> {
@@ -56,6 +57,60 @@ export interface RequestConfig<XhrReqConfig = DefaultXhrReqConfig, T = unknown>
 const noop = () => {};
 
 export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
+  private static mergeConfigs<T, U>(
+    base: readonly [conf: RequestConfig<T, U>, headers: Headers],
+    target: readonly [conf: RequestConfig<T, U>, headers?: HeadersInit],
+  ) {
+    const [baseConf, baseHeaders] = base;
+    const [targetConf, targetHeaders] = target;
+
+    const outHeaders = new Headers(baseHeaders);
+    if (targetHeaders) {
+      new Headers(targetHeaders).forEach((value, key) => {
+        outHeaders.set(key, value);
+      });
+    }
+
+    const outConf = extend(baseConf, targetConf);
+
+    if (targetConf.xhr && baseConf.xhr) {
+      outConf.xhr = extend(baseConf.xhr, targetConf.xhr);
+    }
+
+    return [outConf, outHeaders] as const;
+  }
+
+  private static initOptionsToBaseConfig<XhrReqConfig = DefaultXhrReqConfig>(options?: AdapterOptions<XhrReqConfig>) {
+    const baseConfig: RequestConfigBase<XhrReqConfig> = {};
+    let baseHeaders: Headers;
+
+    if (options?.defaultTimeout) {
+      baseConfig.timeout = options.defaultTimeout;
+    }
+    if (options?.defaultAutoRetry) {
+      baseConfig.autoRetry = options.defaultAutoRetry;
+    }
+    if (options?.defaultRetryDelay) {
+      baseConfig.retryDelay = options.defaultRetryDelay;
+    }
+    if (options?.defaultXhr) {
+      baseConfig.xhr = { ...options.defaultXhr };
+    }
+    if (options?.baseURL) {
+      baseConfig.baseURL = options.baseURL;
+    }
+    if (options?.basePath) {
+      baseConfig.basePath = options.basePath;
+    }
+    if (options?.defaultHeaders) {
+      baseHeaders = new Headers(options.defaultHeaders);
+    } else {
+      baseHeaders = new Headers();
+    }
+
+    return [baseConfig, baseHeaders] as const;
+  }
+
   static new<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response>(
     options?: AdapterOptions<XhrReqConfig>,
     xhr?: XHRInterface<XhrReqConfig, XhrResp>,
@@ -64,11 +119,12 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
   }
 
   private readonly xhr!: XHRInterface<any, any>;
-  private readonly baseConfig: RequestConfig<XhrReqConfig> = {};
-  private readonly baseHeaders: Headers;
-  private readonly beforeRequest;
-  private readonly afterResponse;
-  private readonly afterBuildUrl;
+  private baseConfig: RequestConfig<XhrReqConfig>;
+  private baseHeaders!: Headers;
+  private beforeRequest;
+  private afterResponse;
+  private afterBuildUrl;
+  private afterRequestError;
 
   private constructor(
     options?: AdapterOptions<XhrReqConfig>,
@@ -80,33 +136,14 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
       this.xhr = new FetchXHR();
     }
 
-    if (options?.defaultTimeout) {
-      this.baseConfig.timeout = options.defaultTimeout;
-    }
-    if (options?.defaultAutoRetry) {
-      this.baseConfig.autoRetry = options.defaultAutoRetry;
-    }
-    if (options?.defaultRetryDelay) {
-      this.baseConfig.retryDelay = options.defaultRetryDelay;
-    }
-    if (options?.defaultXhr) {
-      this.baseConfig.xhr = { ...options.defaultXhr };
-    }
-    if (options?.baseURL) {
-      this.baseConfig.baseURL = options.baseURL;
-    }
-    if (options?.basePath) {
-      this.baseConfig.basePath = options.basePath;
-    }
-    if (options?.defaultHeaders) {
-      this.baseHeaders = new Headers(options.defaultHeaders);
-    } else {
-      this.baseHeaders = new Headers();
-    }
+    const [baseConfig, baseHeaders] = Adapter.initOptionsToBaseConfig(options);
 
-    this.beforeRequest = options?.onBeforeRequest;
-    this.afterResponse = options?.onAfterResponse;
-    this.afterBuildUrl = options?.onAfterBuildUrl;
+    this.baseConfig = baseConfig;
+    this.baseHeaders = baseHeaders;
+    this.beforeRequest = options?.onBeforeRequest ?? noop;
+    this.afterResponse = options?.onAfterResponse ?? noop;
+    this.afterBuildUrl = options?.onAfterBuildUrl ?? noop;
+    this.afterRequestError = options?.onRequestError ?? noop;
   }
 
   private addContentType(h: Headers) {
@@ -144,38 +181,27 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     config?: RequestConfig<XhrReqConfig, T>,
   ): RequestConfig<XhrReqConfig, T> {
     if (!config) {
-      if (method === "GET" || method === "OPTIONS") {
-        return extend(this.baseConfig, { headers: this.baseHeaders }) as RequestConfig<XhrReqConfig, T>;
+      if (method !== "GET" && method !== "OPTIONS") {
+        const headers = new Headers(this.baseHeaders);
+        this.addContentType(headers);
+
+        return extend(this.baseConfig, {
+          headers,
+        }) as RequestConfig<XhrReqConfig, T>;
       }
 
-      const headers = new Headers(this.baseHeaders);
-      this.addContentType(headers);
-
-      return extend(this.baseConfig, {
-        headers,
-      }) as RequestConfig<XhrReqConfig, T>;
+      return extend(this.baseConfig, { headers: this.baseHeaders }) as RequestConfig<XhrReqConfig, T>;
     }
 
-    const finalConfig = extend(
-      this.baseConfig as RequestConfig<XhrReqConfig, T>,
-      config,
+    const [finalConfig, finalHeaders] = Adapter.mergeConfigs<XhrReqConfig, T>(
+      [this.baseConfig as any, this.baseHeaders],
+      [config, config.headers],
     );
 
-    finalConfig.headers = new Headers(this.baseHeaders);
-    if (config.headers) {
-      new Headers(config.headers).forEach((value, key) => {
-        (finalConfig.headers as Headers).set(key, value);
-      });
-    }
+    finalConfig.headers = finalHeaders;
 
     if (method !== "GET" && method !== "OPTIONS") {
-      this.addContentType(finalConfig.headers);
-    }
-
-    if (config.xhr) {
-      if (this.baseConfig.xhr) {
-        finalConfig.xhr = extend(this.baseConfig.xhr, config.xhr);
-      }
+      this.addContentType(finalHeaders);
     }
 
     return finalConfig;
@@ -319,16 +345,27 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
         body,
         config.autoRetry ? config.autoRetry - 1 : undefined,
       );
-    } catch (error) {
-      if (AdapterRequestError.is(error)) {
-        throw error;
+    } catch (err) {
+      let error: AdapterRequestError;
+      if (AdapterRequestError.is(err)) {
+        error = err;
+      } else {
+        error = new AdapterRequestError(
+          config,
+          "Unexpected error",
+          undefined,
+          err,
+        );
       }
-      throw new AdapterRequestError(
-        config,
-        "Unexpected error",
-        undefined,
-        error,
-      );
+
+      if (this.afterRequestError) {
+        const override = this.afterRequestError(error);
+        if (override) {
+          throw override;
+        }
+      }
+
+      throw error;
     }
   }
 
@@ -374,6 +411,62 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     return this.request("OPTIONS", url, config);
   }
 
+  extend(options?: AdapterOptions<XhrReqConfig>) {
+    const adapter = new Adapter(undefined, this.xhr);
+
+    const [baseConfig, baseHeader] = Adapter.mergeConfigs(
+      [this.baseConfig, this.baseHeaders],
+      Adapter.initOptionsToBaseConfig(options),
+    );
+
+    adapter.baseConfig = baseConfig;
+    adapter.baseHeaders = baseHeader;
+
+    if (options?.onBeforeRequest) {
+      adapter.beforeRequest = async (u, c, b) => {
+        const override = await this.beforeRequest(u, c, b);
+        if (override) {
+          u = override[0];
+          c = override[1];
+          b = override[2];
+        }
+        return (await options.onBeforeRequest!(u, c, b)) ?? [u, c, b];
+      };
+    }
+
+    if (options?.onAfterResponse) {
+      adapter.afterResponse = async (r) => {
+        const override = await this.afterResponse(r);
+        if (override) {
+          r = override;
+        }
+        return (await options.onAfterResponse!(r)) ?? r;
+      };
+    }
+
+    if (options?.onAfterBuildUrl) {
+      adapter.afterBuildUrl = (u) => {
+        const override = this.afterBuildUrl(u);
+        if (override) {
+          u = override;
+        }
+        return options.onAfterBuildUrl!(u) ?? u;
+      };
+    }
+
+    if (options?.onRequestError) {
+      adapter.afterRequestError = (err) => {
+        const override = this.afterRequestError(err);
+        if (override) {
+          err = override;
+        }
+        return options.onRequestError!(err) ?? err;
+      };
+    }
+
+    return adapter;
+  }
+
   endpoint<
     const Url extends string,
     const SearchParams extends string[] = [],
@@ -388,21 +481,31 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     PutReqT = unknown,
     DeleteReqT = unknown,
   >(
-    params: AdapterEndpointConfig<
-      Url,
-      SearchParams,
-      GetT,
-      PostT,
-      PatchT,
-      PutT,
-      DeleteT,
-      OptionsT,
-      PostReqT,
-      PatchReqT,
-      PutReqT,
-      DeleteReqT
-    >,
+    params:
+      & AdapterEndpointConfig<
+        Url,
+        SearchParams,
+        GetT,
+        PostT,
+        PatchT,
+        PutT,
+        DeleteT,
+        OptionsT,
+        PostReqT,
+        PatchReqT,
+        PutReqT,
+        DeleteReqT
+      >
+      & {
+        options?: AdapterOptions<XhrReqConfig>;
+      },
   ) {
+    if (params.options) {
+      const { options, ...rest } = params;
+      const adapter = this.extend(options);
+      return new AdapterEndpoint(adapter, rest);
+    }
+
     return new AdapterEndpoint(this, params);
   }
 }
