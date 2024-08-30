@@ -34,4 +34,4 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_AUTOMATION_TOKEN }}
           TAG_NAME: ${{ github.event.release.tag_name }}
         run: |-
-          npm version --no-git-tag-version "$TAG_NAME" && npm publish
+          npm version --no-git-tag-version "$TAG_NAME" ?> /dev/null | true && npm publish
