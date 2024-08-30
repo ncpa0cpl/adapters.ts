@@ -4,11 +4,11 @@
   "hooks": {
     "pre-push": [
       {
-        "name": "Prettier",
-        "script": "test:prettier"
+        "name": "Formatting",
+        "script": "test:fmt"
       },
       {
-        "name": "ESLint",
+        "name": "Lint",
         "script": "test:lint"
       },
       {
@@ -17,8 +17,7 @@
       },
       {
         "name": "Jest",
-        "script": "test:jest",
-        "mustRunAlone": true
+        "script": "test:unit"
       }
     ],
     "pre-commit": [],

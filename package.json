@@ -1,31 +1,14 @@
 {
-  "devDependencies": {
-    "@swc/core": "^1.2.197",
-    "@swc/jest": "^0.2.21",
-    "@types/axios": "^0.14.0",
-    "@types/jest": "^27.4.1",
-    "@typescript-eslint/eslint-plugin": "^5.19.0",
-    "@typescript-eslint/parser": "^5.19.0",
-    "eslint": "^8.13.0",
-    "eslint-config-prettier": "^8.5.0",
-    "eslint-plugin-prettier": "^4.0.0",
-    "git-hook-tasks": "ncpa0cpl/git-hook-tasks",
-    "husky": "^7.0.4",
-    "jest": "^27.5.1",
-    "prettier": "^2.6.2",
-    "prettier-plugin-jsdoc": "^0.3.38",
-    "typescript": "^4.7.3"
-  },
   "name": "adapters.ts",
-  "version": "1.0.2",
-  "main": "./dist/index.js",
-  "scripts": {
-    "build": "tsc",
-    "test:lint": "eslint .",
-    "test:tsc": "tsc --noEmit",
-    "test:jest": "jest --coverage",
-    "test:prettier": "prettier --check ./src/*"
-  },
+  "version": "2.0.0-beta7",
+  "main": "./dist/esm/index.mjs",
+  "types": "./dist/types/index.d.ts",
+  "files": [
+    "dist",
+    "README",
+    "LICENSE",
+    "package.json"
+  ],
   "keywords": [
     "http",
     "xhr",
@@ -50,11 +33,27 @@
     "name": "Szymon Bretner (ncpa0cpl)",
     "email": "szymonb21@gmail.com"
   },
+  "scripts": {
+    "build": "node ./scripts/build.mjs",
+    "test:lint": "oxlint .",
+    "test:tsc": "tsc --noEmit",
+    "test:unit": "vitest run",
+    "test:fmt": "dprint check",
+    "fmt": "dprint fmt",
+    "prepare": "husky install"
+  },
   "dependencies": {
-    "dilswer": "^1.2.0",
     "url-templater.ts": "^1.1.0"
   },
-  "peerDependencies": {
-    "axios": "^0.26.1"
-  }
+  "devDependencies": {
+    "@ncpa0cpl/nodepack": "^2.3.3",
+    "dprint": "^0.47.2",
+    "esbuild": "^0.23.1",
+    "git-hook-tasks": "git+https://github.com/ncpa0cpl/git-hook-tasks#0.0.1",
+    "husky": "8.0.3",
+    "oxlint": "^0.9.0",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  },
+  "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610"
 }

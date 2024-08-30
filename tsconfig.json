@@ -1,18 +1,14 @@
 {
   "compilerOptions": {
-    "target": "es6",
-    "module": "commonjs",
-    "jsx": "react",
+    "target": "es2022",
+    "module": "NodeNext",
     "declaration": true,
-    "outDir": "./dist",
-    "rootDir": "./src",
     "downlevelIteration": true,
     "strict": true,
     "noUnusedLocals": true,
     "noUncheckedIndexedAccess": true,
     "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "skipLibCheck": true
   },
-  "include": ["src/**/*"]
+  "exclude": ["__tests__"]
 }

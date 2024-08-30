@@ -4,207 +4,97 @@ Quick, easy and type-safe way for declarative http endpoint definitions.
 
 ## Quick Start
 
-By default `adapters.ts` provides two ready to use adapter classes:
+### Simple, untyped requests.
 
-- **FetchAdapter** that leverages the native browser fetch API
-- **AxiosAdapter** that leverages the Axios library (axios needs to be installed separately)
+```typescript
+import { adapter } from "adapters.ts";
 
-but any http client library can be used with `adapters.ts`.
+// get request
+adapter.get("/api/films", {
+  baseURL: "https://swapi.dev/",
+}).then(response => {
+  console.log(response.data);
+});
 
-### Define a simple axios adapter
-
-```ts
-import { AxiosAdapter } from "adapters.ts";
-
-class SwapiStarship extends AxiosAdapter {
-  // must be a readonly
-  static readonly URL_TEMPLATE = "https://swapi.dev/api/starships/{id}";
-}
-
-// SwapiStarship: {
-//  get(urlParams: { id: string }, options?: { config?: AxiosRequestConfig }): Promise<AxiosResponse>;
-//  post(urlParams: { id: string }, options?: { config?: AxiosRequestConfig }): Promise<AxiosResponse>;
-//  put(urlParams: { id: string }, options?: { config?: AxiosRequestConfig }): Promise<AxiosResponse>;
-//  patch(urlParams: { id: string }, options?: { config?: AxiosRequestConfig }): Promise<AxiosResponse>;
-//  delete(urlParams: { id: string }, options?: { config?: AxiosRequestConfig }): Promise<AxiosResponse>;
-//  options(urlParams: { id: string }, options?: { config?: AxiosRequestConfig }): Promise<AxiosResponse>;
-// }
-
-// send a get request
-SwapiStarship.get({ id: "1" }).then(
-  (response /* AxiosResponse<any, any> */) => {
-    console.log(response.data);
-  }
-);
-```
-
-### Adapter with type guards on received data
-
-```ts
-import { AxiosAdapter, DataType } from "adapters.ts";
-
-class SwapiStarship extends AxiosAdapter {
-  static readonly URL_TEMPLATE = "https://swapi.dev/api/starships/{id}";
-
-  static GET_RESPONSE_TYPE_DEF = DataType.RecordOf({
-    name: DataType.String,
-    model: DataType.String,
-    /* ... */
-  });
-}
-
-// SwapiStarship: {
-//  get(
-//    urlParams: { id: string },
-//    options?: { config?: AxiosRequestConfig }
-//  ): Promise<AxiosResponse<{name: string; model: string; }>>;
-//
-//  post(urlParams: { id: string }, options?: { config?: AxiosRequestConfig }): Promise<AxiosResponse>;
-//  ...
-// }
-
-// send a request
-SwapiStarship.get({ id: "1" }).then(
-  (response /* AxiosResponse<{name: string, model: string, ...}, any> */) => {
-    console.log(response.data);
-  }
-);
-```
-
-### Adapter with type guards on sent data
-
-```ts
-import { AxiosAdapter, DataType } from "adapters.ts";
-
-class SwapiStarship extends AxiosAdapter {
-  static readonly URL_TEMPLATE = "https://swapi.dev/api/starships";
-
-  static POST_REQUEST_TYPE_DEF = DataType.RecordOf({
-    name: DataType.String,
-    model: DataType.String,
-    /* ... */
-  });
-}
-
-// SwapiStarship: {
-//  get(options?: { config?: AxiosRequestConfig }): Promise<AxiosResponse>;
-//
-//  post(
-//    options: {
-//      data: {
-//        name: string;
-//        model: string;
-//      };
-//      config?: AxiosRequestConfig;
-//    }
-//  ): Promise<AxiosResponse>;
-//  ...
-// }
-
-// send a request
-SwapiStarship.post({
-  // Provided data must have a type that matches the definition in the above class
-  data: {
-    name: "CR90 Corvette",
-    model: "CR90 Corvette",
+// post request
+adapter.post("/api/films", {
+  body: {
+    title: "A New Hope",
   },
+  baseURL: "https://swapi.dev/",
 });
 ```
 
-### Disable/enable data validation on requests and responses
+### Request with types and validation
 
-```ts
-import { AxiosAdapter } from "adapters.ts";
+```typescript
+import { adapter } from "adapters.ts";
 
-class MyAdapter extends AxiosAdapter {
-  static readonly URL_TEMPLATE = "https://url-goes.here";
-
-  // set this to true to validate all incoming requests against
-  // the below type definitions, or to false to not validate at all
-  // default is `false`
-  static VALIDATE_REQUESTS = true;
-
-  static DELETE_REQUEST_TYPE_DEF = /* some type definition */;
-  static GET_REQUEST_TYPE_DEF = /* some type definition */;
-  static OPTIONS_REQUEST_TYPE_DEF = /* some type definition */;
-  static PATCH_REQUEST_TYPE_DEF = /* some type definition */;
-  static POST_REQUEST_TYPE_DEF = /* some type definition */;
-  static PUT_REQUEST_TYPE_DEF = /* some type definition */;
-
-  // set this to true to validate all incoming requests against
-  // the below type definitions, or to false to not validate at all
-  // default is `true`
-  static VALIDATE_RESPONSES = true;
-
-  static DELETE_RESPONSE_TYPE_DEF = /* some type definition */;
-  static GET_RESPONSE_TYPE_DEF = /* some type definition */;
-  static OPTIONS_RESPONSE_TYPE_DEF = /* some type definition */;
-  static PATCH_RESPONSE_TYPE_DEF = /* some type definition */;
-  static POST_RESPONSE_TYPE_DEF = /* some type definition */;
-  static PUT_RESPONSE_TYPE_DEF = /* some type definition */;
-}
+adapter.get("/api/films", {
+  baseURL: "https://swapi.dev/",
+  validate: (data): data is { title: string }[] => {
+    return Array.isArray(data)
+      && data.every(film => typeof film.title === "string");
+  },
+}).then(response => {
+  console.log(response.data);
+});
 ```
 
-### Specify an axios instance for the adapter
+### Endpoint defintions
 
-To use a specific axios instance:
+Endpoint definitions can enforce specific response data types and request data types, as well as possible or required search and query parameters.
 
-```ts
-import { AxiosAdapter, AxiosXHR } from "adapters.ts";
+```typescript
+import { Adapter } from "adapters.ts";
 
-const myAxiosInstance = axios.create();
+const swapi = Adapter.new({ baseURL: "https://swapi.dev/" });
 
-class SwapiStarship extends AxiosAdapter {
-  protected static readonly xhr = new AxiosXHR(myAxiosInstance);
+const film = swapi.endpoint({
+  // path to endpoint with a required "id" query parameter
+  url: "/api/film/{id}",
+  // define an optional "fields" search parameter
+  searchParams: ["?fields"],
+  validate: {
+    // shape of GET response
+    get: (data): data is { id: string; title: string } => {
+      return typeof data === "object" && typeof data.title === "string"
+        && typeof data.id === "string";
+    },
+    // shape of PATCH response
+    patch: (data): data is { ok: boolean } => {
+      return typeof data === "object" && typeof data.ok === "boolean";
+    },
+  },
+  validateRequest: {
+    // shape of POST request
+    patch: (data): data is { title: string } => {
+      return typeof data === "object" && typeof data.title === "string";
+    },
+  },
+});
 
-  static URL_TEMPLATE = "https://swapi.dev/api/starships/{id}";
-}
+// sends a GET request to https://swapi.dev/api/film/1?fields=id,title
+film.get({ id: 1 }, { searchParams: { fields: "id,title" } }).then(response => {
+  response.data; // { id: string, title: string }
+});
+
+// sends a PATCH request to https://swapi.dev/api/film/1
+film.patch({ id: 1 }, { title: "A New Hope" }).then(response => {
+  response.data; // { ok: boolean }
+});
 ```
 
-### Define new adapter with a http client of your choice
+**Note:** The `validate` and `validateRequest` functions don't actually have to perform any runtime validation.
+A basic method returning `true` with appropraite type definition can be used insted to only provide type definitions.
+(e.x. `(data): data is MyObject => true`)
 
-First a class implementing an adapters.ts XHRInterface will be necessary. This class will be used to send actual request and retrieve the payload for validation.
+## Url templating
 
-(for reference [here is the default axios xhr interface](./src/AxiosAdapter/axios-xhr.ts))
+[See here how to create more advanced URL templates](https://github.com/ncpa0cpl/url-templater?tab=readme-ov-file#url-templaterts)
 
-```ts
-import type { XHRInterface, _, RequestMethod } from "adapters.ts";
+## Fetch
 
-type MyHTTPClientResponse<T> = {
-  data: T; // response payload
-  status: number; // ex. 404, 200 etc
-};
+By default `fetch` is being used to make requests, but other methods can be used instead by providing an interface to the `Adapter.new` method.
 
-type MyHTTPClientConfig = {
-  /* ... */
-};
-
-const MyHTTPClientInstance = new MyHTTPClient(); // a hypothetical http client
-
-class MyHTTPClientXHR<T = _> implements XHRInterface<MyHTTPClientResponse<T>> {
-  async sendRequest(params: {
-    method: RequestMethod;
-    url: string;
-    data?: Record<string, any>;
-    config?: MyHTTPClientConfig;
-  }): Promise<MyHTTPClientResponse<T>> {
-    return MyHTTPClientInstance.sendHttpRequest<T>(/* ... */);
-  }
-
-  async extractPayload(response: MyHTTPClientResponse<T>): Promise<T> {
-    return response.data;
-  }
-}
-```
-
-Provide the XHRInterface class instance to the Adapter:
-
-```ts
-import { BaseAdapter } from "adapters.ts";
-
-class MyHTTPClientAdapter extends BaseAdapter {
-  protected static readonly xhr = new MyHTTPClientXHR();
-}
-```
-
-The `MyHTTPClientAdapter` can be then used in the same way as `AxiosAdapter` or `FetchAdapter`.
+Required interface can be foud here: [XHRInterface](./src/xhr-interface.ts)
