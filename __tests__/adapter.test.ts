@@ -378,8 +378,9 @@ describe("Adapter", () => {
       expect.assertions(4);
 
       fetchMock.mockImplementation(async (url, options) => {
+        // browser should set the content type for form automaticallly with a btoper boundaey string
         expect((options?.headers as Headers).get("Content-Type")).toEqual(
-          "multipart/form-data",
+          null,
         );
         expect(options?.body).toBeInstanceOf(FormData);
         const formData = options?.body as FormData;

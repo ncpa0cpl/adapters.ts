@@ -39,6 +39,7 @@ export class FetchXHR implements XHRInterface<DefaultXhrReqConfig, FetchResponse
             formData.append(key, params.body[key]);
           }
           init.body = formData;
+          params.headers?.delete("Content-Type");
           break;
         default:
           init.body = params.body as BodyInit;
@@ -57,7 +58,24 @@ export class FetchXHR implements XHRInterface<DefaultXhrReqConfig, FetchResponse
     return [resp as any, resp.status, resp.statusText];
   }
 
-  extractPayload<T>(response: FetchResponse<T>): Promise<T> {
+  extractPayload<T>(response: FetchResponse<T>, config?: DefaultXhrReqConfig | undefined): Promise<T> {
+    if (config?.responseType) {
+      switch (config.responseType) {
+        case "json":
+          return response.json();
+        case "text":
+          return response.text() as any;
+        case "arrayBuffer":
+          return response.arrayBuffer() as any;
+        case "blob":
+          return response.blob() as any;
+        case "formData":
+          return response.formData() as any;
+        case "none":
+          return Promise.resolve(null as any);
+      }
+    }
+
     const contentType = response.headers.get("Content-Type")?.split(";")[0];
     switch (contentType) {
       case "application/json":

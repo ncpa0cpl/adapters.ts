@@ -104,11 +104,12 @@ export class AdapterEndpoint<
   PutReqT = unknown,
   DeleteReqT = unknown,
   XhrReqConfig = DefaultXhrReqConfig,
+  XhrResp = Response,
 > {
   private urlTemplate;
 
   constructor(
-    private readonly adapter: Adapter<XhrReqConfig>,
+    private readonly adapter: Adapter<XhrReqConfig, XhrResp>,
     private readonly params: AdapterEndpointConfig<
       Url,
       SearchParams,
@@ -334,15 +335,28 @@ export class AdapterEndpoint<
   }
 
   url(
-    params: UrlLiteralParams<Url>,
-    config?: Pick<RequestConfigBase, "baseURL" | "basePath">,
+    ...args: SearchParams["length"] extends 0
+      ? [params: UrlLiteralParams<Url>, config?: Pick<RequestConfigBase, "baseURL" | "basePath">]
+      : [
+        params: UrlLiteralParams<Url>,
+        config: Pick<RequestConfigBase, "baseURL" | "basePath"> & {
+          searchParams: Record<SearchParams[number], string>;
+        },
+      ]
   ): string {
+    const [params, config] = args;
+
     const templeRes = this.urlTemplate.generate(params);
 
     let u = this.adapter["prepareUrl"](
       templeRes,
       extend(this.adapter["baseConfig"], config),
     );
+
+    if (config && "searchParams" in config) {
+      const sp = new URLSearchParams(config.searchParams);
+      u.search = sp.toString();
+    }
 
     const afterBuildUrl = this.adapter["afterBuildUrl"];
     if (afterBuildUrl) {

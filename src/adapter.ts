@@ -10,10 +10,18 @@ import { FetchXHR } from "./xhr/fetch";
 
 type MaybePromise<T> = T | Promise<T>;
 
-export type DefaultXhrReqConfig = Omit<
-  RequestInit,
-  "headers" | "body" | "method" | "signal"
->;
+export type DefaultXhrReqConfig =
+  & Omit<
+    RequestInit,
+    "headers" | "body" | "method" | "signal"
+  >
+  & {
+    /**
+     * Overrides the default behavior of detecting the content type via
+     * headers, and use the specified content type instead.
+     */
+    responseType?: "json" | "text" | "blob" | "arrayBuffer" | "formData" | "none";
+  };
 
 export interface AdapterOptions<XhrReqConfig = DefaultXhrReqConfig> {
   defaultTimeout?: number;
@@ -45,6 +53,7 @@ export interface RequestConfigBase<XhrReqConfig = DefaultXhrReqConfig> {
   retryDelay?: number;
   xhr?: XhrReqConfig;
   headers?: HeadersInit;
+  abortSignal?: AbortSignal;
 }
 
 export interface RequestConfig<XhrReqConfig = DefaultXhrReqConfig, T = unknown>
@@ -118,6 +127,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     return new Adapter(options, xhr);
   }
 
+  protected extendsFrom?: Adapter<XhrReqConfig, XhrResp>;
   private readonly xhr!: XHRInterface<any, any>;
   private baseConfig: RequestConfig<XhrReqConfig>;
   private baseHeaders!: Headers;
@@ -220,6 +230,13 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
       );
     }, config.timeout);
 
+    if (config.abortSignal) {
+      config.abortSignal.addEventListener("abort", () => {
+        clearTimeout(tid);
+        abortController.abort(config.abortSignal?.reason);
+      }, { once: true });
+    }
+
     return [
       abortController.signal,
       () => {
@@ -268,7 +285,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
         );
       }
 
-      let data = (await this.xhr.extractPayload(response)) as T;
+      let data = (await this.xhr.extractPayload(response, config.xhr)) as T;
       if (config.validate) {
         if (!config.validate(data)) {
           throw new AdapterRequestError(config, "Invalid response data");
@@ -412,7 +429,8 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
   }
 
   extend(options?: AdapterOptions<XhrReqConfig>) {
-    const adapter = new Adapter(undefined, this.xhr);
+    const adapter = new Adapter<XhrReqConfig, XhrResp>(undefined, this.xhr);
+    adapter.extendsFrom = this;
 
     const [baseConfig, baseHeader] = Adapter.mergeConfigs(
       [this.baseConfig, this.baseHeaders],
@@ -432,6 +450,8 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
         }
         return (await options.onBeforeRequest!(u, c, b)) ?? [u, c, b];
       };
+    } else {
+      adapter.beforeRequest = this.beforeRequest;
     }
 
     if (options?.onAfterResponse) {
@@ -442,6 +462,8 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
         }
         return (await options.onAfterResponse!(r)) ?? r;
       };
+    } else {
+      adapter.afterResponse = this.afterResponse;
     }
 
     if (options?.onAfterBuildUrl) {
@@ -452,6 +474,8 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
         }
         return options.onAfterBuildUrl!(u) ?? u;
       };
+    } else {
+      adapter.afterBuildUrl = this.afterBuildUrl;
     }
 
     if (options?.onRequestError) {
@@ -462,6 +486,8 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
         }
         return options.onRequestError!(err) ?? err;
       };
+    } else {
+      adapter.afterRequestError = this.afterRequestError;
     }
 
     return adapter;

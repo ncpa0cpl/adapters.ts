@@ -16,5 +16,5 @@ export type XHRInterface<Conf, R> = {
     abortSignal?: AbortSignal;
   }): Promise<[response: R, status: number, statusText: string]>;
 
-  extractPayload(response: R): Promise<unknown>;
+  extractPayload(response: R, config?: Conf): Promise<unknown>;
 };
