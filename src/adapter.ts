@@ -23,6 +23,30 @@ export type DefaultXhrReqConfig =
     responseType?: "json" | "text" | "blob" | "arrayBuffer" | "formData" | "none";
   };
 
+export interface BeforeRequestHandler<XhrReqConfig> {
+  (
+    url: URL,
+    config: RequestConfig<XhrReqConfig>,
+    body?: unknown,
+  ): MaybePromise<
+    void | [url: URL, config: RequestConfig<XhrReqConfig>, body?: unknown]
+  >;
+}
+
+export interface AfterResponseHandler {
+  (
+    response: AdapterResponse<any>,
+  ): MaybePromise<void | AdapterResponse>;
+}
+
+export interface AfterBuildUrlHandler {
+  (url: URL): void | URL;
+}
+
+export interface RequestErrorHandler {
+  (error: AdapterRequestError): void | AdapterRequestError;
+}
+
 export interface AdapterOptions<XhrReqConfig = DefaultXhrReqConfig> {
   defaultTimeout?: number;
   defaultAutoRetry?: undefined | number;
@@ -31,18 +55,10 @@ export interface AdapterOptions<XhrReqConfig = DefaultXhrReqConfig> {
   defaultHeaders?: HeadersInit;
   baseURL?: string | URL;
   basePath?: string;
-  onBeforeRequest?: (
-    url: URL,
-    config: RequestConfig<XhrReqConfig>,
-    body?: unknown,
-  ) => MaybePromise<
-    void | [url: URL, config: RequestConfig<XhrReqConfig>, body?: unknown]
-  >;
-  onAfterResponse?: (
-    response: AdapterResponse<any>,
-  ) => MaybePromise<void | AdapterResponse>;
-  onAfterBuildUrl?: (url: URL) => void | URL;
-  onRequestError?: (error: AdapterRequestError) => void | AdapterRequestError;
+  onBeforeRequest?: BeforeRequestHandler<XhrReqConfig>;
+  onAfterResponse?: AfterResponseHandler;
+  onAfterBuildUrl?: AfterBuildUrlHandler;
+  onRequestError?: RequestErrorHandler;
 }
 
 export interface RequestConfigBase<XhrReqConfig = DefaultXhrReqConfig> {
@@ -93,25 +109,25 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     const baseConfig: RequestConfigBase<XhrReqConfig> = {};
     let baseHeaders: Headers;
 
-    if (options?.defaultTimeout) {
+    if (options?.defaultTimeout != null) {
       baseConfig.timeout = options.defaultTimeout;
     }
-    if (options?.defaultAutoRetry) {
+    if (options?.defaultAutoRetry != null) {
       baseConfig.autoRetry = options.defaultAutoRetry;
     }
-    if (options?.defaultRetryDelay) {
+    if (options?.defaultRetryDelay != null) {
       baseConfig.retryDelay = options.defaultRetryDelay;
     }
-    if (options?.defaultXhr) {
+    if (options?.defaultXhr != null) {
       baseConfig.xhr = { ...options.defaultXhr };
     }
-    if (options?.baseURL) {
+    if (options?.baseURL != null) {
       baseConfig.baseURL = options.baseURL;
     }
-    if (options?.basePath) {
+    if (options?.basePath != null) {
       baseConfig.basePath = options.basePath;
     }
-    if (options?.defaultHeaders) {
+    if (options?.defaultHeaders != null) {
       baseHeaders = new Headers(options.defaultHeaders);
     } else {
       baseHeaders = new Headers();
@@ -150,10 +166,10 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
 
     this.baseConfig = baseConfig;
     this.baseHeaders = baseHeaders;
-    this.beforeRequest = options?.onBeforeRequest ?? noop;
-    this.afterResponse = options?.onAfterResponse ?? noop;
-    this.afterBuildUrl = options?.onAfterBuildUrl ?? noop;
-    this.afterRequestError = options?.onRequestError ?? noop;
+    this.beforeRequest = options?.onBeforeRequest?.bind(options) ?? noop;
+    this.afterResponse = options?.onAfterResponse?.bind(options) ?? noop;
+    this.afterBuildUrl = options?.onAfterBuildUrl?.bind(options) ?? noop;
+    this.afterRequestError = options?.onRequestError?.bind(options) ?? noop;
   }
 
   private addContentType(h: Headers) {
@@ -482,9 +498,8 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
       adapter.afterRequestError = (err) => {
         const override = this.afterRequestError(err);
         if (override) {
-          err = override;
+          return options.onRequestError!(override);
         }
-        return options.onRequestError!(err) ?? err;
       };
     } else {
       adapter.afterRequestError = this.afterRequestError;

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { Adapter } from "../../src";
+import { Adapter, AdapterResponse } from "../../src";
+import { BeforeRequestHandler, DefaultXhrReqConfig } from "../../src/adapter";
 
 const fetchMock = vi.fn(
   async (url: string, init?: RequestInit): Promise<Response> => {
@@ -263,5 +264,104 @@ describe("Adapter.endpoint()", () => {
         searchParams: { foo: "foo", bar: "bar", baz: "baz", qux: "qux" },
       }),
     ).resolves.toBeDefined();
+  });
+
+  it("override adapter config", async () => {
+    let requestedURL: string | null = null;
+    fetchMock.mockImplementation(async (url, options) => {
+      requestedURL = url;
+      return Response.json(JSON.parse((options!.body as string) ?? "null"));
+    });
+
+    const afterBuildUrl = vi.fn((u: URL) => u);
+    const afterResponse = vi.fn((r: AdapterResponse<any>) => r);
+    const beforeRequest = vi.fn<BeforeRequestHandler<any>>((...conf) => conf);
+    const onRequestError = vi.fn(err => err);
+
+    const adapter = Adapter.new<DefaultXhrReqConfig>({
+      basePath: "api/devices",
+      baseURL: "https://mydomain.com",
+      defaultAutoRetry: 2,
+      defaultHeaders: {
+        "X-My-Header": "value",
+        "X-My-Header-2": "value2",
+      },
+      defaultRetryDelay: 1000,
+      defaultTimeout: 5000,
+      defaultXhr: {
+        credentials: "include",
+        responseType: "json",
+      },
+      onAfterBuildUrl: afterBuildUrl,
+      onAfterResponse: afterResponse,
+      onBeforeRequest: beforeRequest,
+      onRequestError: onRequestError,
+    });
+
+    const endpAfterBuildUrl = vi.fn((u: URL) => u);
+    const endpAfterResponse = vi.fn((r: AdapterResponse<any>) => r);
+    const endpBeforeRequest = vi.fn<BeforeRequestHandler<any>>((...conf) => conf);
+    const endpRequestError = vi.fn(err => err);
+    const e = adapter.endpoint({
+      url: "{deviceID}/info",
+      options: {
+        defaultTimeout: 0,
+        defaultAutoRetry: 0,
+        baseURL: "https://myotherdomain.com",
+        defaultHeaders: {
+          "X-My-Header": "NONE",
+          "X-My-Header-3": "value3",
+        },
+        defaultXhr: {
+          credentials: "same-origin",
+          referrer: "no-referrer",
+        },
+        onAfterBuildUrl: endpAfterBuildUrl,
+        onAfterResponse: endpAfterResponse,
+        onBeforeRequest: endpBeforeRequest,
+        onRequestError: endpRequestError,
+      },
+    });
+
+    const endpConfig = e["adapter"]["baseConfig"];
+    const endpHeaders = e["adapter"]["baseHeaders"];
+
+    // assert configs and headers get merged correctly
+    expect(endpConfig.basePath).toBe("api/devices");
+    expect(endpConfig.baseURL).toBe("https://myotherdomain.com");
+    expect(endpConfig.autoRetry).toBe(0);
+    expect(endpConfig.retryDelay).toBe(1000);
+    expect(endpConfig.timeout).toBe(0);
+    expect(endpConfig.xhr).toMatchObject({
+      credentials: "same-origin",
+      responseType: "json",
+      referrer: "no-referrer",
+    });
+    expect(endpHeaders.get("X-My-Header")).toBe("NONE");
+    expect(endpHeaders.get("X-My-Header-2")).toBe("value2");
+    expect(endpHeaders.get("X-My-Header-3")).toBe("value3");
+
+    // assert all callbacks are called
+
+    await e.get({ deviceID: "1234" }, { body: {} });
+
+    expect(requestedURL).toBe("https://myotherdomain.com/api/devices/1234/info");
+    expect(afterBuildUrl).toBeCalledTimes(1);
+    expect(afterResponse).toBeCalledTimes(1);
+    expect(beforeRequest).toBeCalledTimes(1);
+    expect(onRequestError).toBeCalledTimes(0);
+    expect(endpAfterBuildUrl).toBeCalledTimes(1);
+    expect(endpAfterResponse).toBeCalledTimes(1);
+    expect(endpBeforeRequest).toBeCalledTimes(1);
+    expect(endpRequestError).toBeCalledTimes(0);
+
+    fetchMock.mockImplementation(async (url, options) => {
+      return Response.error();
+    });
+
+    await e.get({ deviceID: "1234" }, { body: {} }).catch(() => {});
+
+    expect(onRequestError).toBeCalledTimes(1);
+    expect(endpRequestError).toBeCalledTimes(1);
   });
 });
