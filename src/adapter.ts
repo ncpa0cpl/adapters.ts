@@ -28,9 +28,10 @@ export interface BeforeRequestHandler<XhrReqConfig> {
   (
     url: URL,
     config: RequestConfig<XhrReqConfig>,
-    body?: unknown,
+    body: unknown,
+    method: RequestMethod,
   ): MaybePromise<
-    void | [url: URL, config: RequestConfig<XhrReqConfig>, body?: unknown] | AdapterResponse
+    void | [url: URL, config: RequestConfig<XhrReqConfig>, body: unknown] | AdapterResponse
   >;
 }
 
@@ -177,10 +178,11 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
   private async runBeforeRequestHandlers<T>(
     url: URL,
     config: RequestConfig<XhrReqConfig>,
-    body?: unknown,
+    body: unknown,
+    method: RequestMethod,
   ): Promise<[url: URL, config: RequestConfig<XhrReqConfig>, body?: unknown] | AdapterResponse<XhrResp, T>> {
     if (this.extendsFrom) {
-      const ov = await this.extendsFrom.runBeforeRequestHandlers(url, config, body);
+      const ov = await this.extendsFrom.runBeforeRequestHandlers(url, config, body, method);
       if (AdapterResponse.is(ov)) {
         return ov as any;
       }
@@ -188,7 +190,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     }
 
     for (const handler of this.beforeRequestHandlers) {
-      const override = await handler(url, config, body);
+      const override = await handler(url, config, body, method);
       if (override) {
         if (AdapterResponse.is(override)) {
           return override as any;
@@ -241,6 +243,22 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
       }
     }
     return error;
+  }
+
+  private handleRequestError(err: unknown, config: RequestConfig<XhrReqConfig>) {
+    let error: AdapterRequestError;
+    if (AdapterRequestError.is(err)) {
+      error = err;
+    } else {
+      error = new AdapterRequestError(
+        config,
+        "Unexpected error",
+        undefined,
+        err,
+      );
+    }
+
+    return this.runAfterRequestErrorHandlers(error);
   }
 
   private addContentType(h: Headers) {
@@ -379,7 +397,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
         }
       }
 
-      const resp = new AdapterResponse(this, config, data, response);
+      const resp = new AdapterResponse(this, method, url, config, data, response);
 
       return await this.runAfterResponseHandlers(resp);
     } catch (error) {
@@ -421,7 +439,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
 
       u = this.runAfterBuildUrlHandlers(u);
 
-      const override = await this.runBeforeRequestHandlers(u, config, body);
+      const override = await this.runBeforeRequestHandlers(u, config, body, method);
       if (override) {
         if (AdapterResponse.is(override)) {
           return override as AdapterResponse<XhrResp, T>;
@@ -439,19 +457,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
         config.autoRetry ? config.autoRetry - 1 : undefined,
       );
     } catch (err) {
-      let error: AdapterRequestError;
-      if (AdapterRequestError.is(err)) {
-        error = err;
-      } else {
-        error = new AdapterRequestError(
-          config,
-          "Unexpected error",
-          undefined,
-          err,
-        );
-      }
-
-      throw this.runAfterRequestErrorHandlers(error);
+      throw this.handleRequestError(err, config!);
     }
   }
 

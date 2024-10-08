@@ -3,8 +3,23 @@
   "version": "2.0.1",
   "main": "./dist/esm/index.mjs",
   "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/esm/index.mjs"
+    },
+    "./extensions/async-queue": {
+      "types": "./extensions/async-queue.d.ts",
+      "default": "./extensions/async-queue.mjs"
+    },
+    "./extensions/deduplicator": {
+      "types": "./extensions/deduplicator.d.ts",
+      "default": "./extensions/deduplicator.mjs"
+    }
+  },
   "files": [
     "dist",
+    "extensions",
     "README",
     "LICENSE",
     "package.json"
@@ -43,12 +58,13 @@
     "prepare": "husky install"
   },
   "dependencies": {
+    "async-await-queue": "^2.1.4",
     "url-templater.ts": "^1.1.0"
   },
   "devDependencies": {
     "@ncpa0cpl/nodepack": "^2.3.3",
     "dprint": "^0.47.2",
-    "esbuild": "^0.23.1",
+    "esbuild": "^0.24.0",
     "git-hook-tasks": "git+https://github.com/ncpa0cpl/git-hook-tasks#0.0.1",
     "husky": "8.0.3",
     "oxlint": "^0.9.0",
