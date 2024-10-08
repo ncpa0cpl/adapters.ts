@@ -274,7 +274,7 @@ describe("Adapter.endpoint()", () => {
     });
 
     const afterBuildUrl = vi.fn((u: URL) => u);
-    const afterResponse = vi.fn((r: AdapterResponse<any>) => r);
+    const afterResponse = vi.fn((r: AdapterResponse<any, any>) => r);
     const beforeRequest = vi.fn<BeforeRequestHandler<any>>((...conf) => conf);
     const onRequestError = vi.fn(err => err);
 
@@ -292,14 +292,14 @@ describe("Adapter.endpoint()", () => {
         credentials: "include",
         responseType: "json",
       },
-      onAfterBuildUrl: afterBuildUrl,
-      onAfterResponse: afterResponse,
-      onBeforeRequest: beforeRequest,
-      onRequestError: onRequestError,
+      onAfterBuildUrl: [afterBuildUrl],
+      onAfterResponse: [afterResponse],
+      onBeforeRequest: [beforeRequest],
+      onRequestError: [onRequestError],
     });
 
     const endpAfterBuildUrl = vi.fn((u: URL) => u);
-    const endpAfterResponse = vi.fn((r: AdapterResponse<any>) => r);
+    const endpAfterResponse = vi.fn((r: AdapterResponse<any, any>) => r);
     const endpBeforeRequest = vi.fn<BeforeRequestHandler<any>>((...conf) => conf);
     const endpRequestError = vi.fn(err => err);
     const e = adapter.endpoint({
@@ -316,10 +316,10 @@ describe("Adapter.endpoint()", () => {
           credentials: "same-origin",
           referrer: "no-referrer",
         },
-        onAfterBuildUrl: endpAfterBuildUrl,
-        onAfterResponse: endpAfterResponse,
-        onBeforeRequest: endpBeforeRequest,
-        onRequestError: endpRequestError,
+        onAfterBuildUrl: [endpAfterBuildUrl],
+        onAfterResponse: [endpAfterResponse],
+        onBeforeRequest: [endpBeforeRequest],
+        onRequestError: [endpRequestError],
       },
     });
 

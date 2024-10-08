@@ -2,6 +2,7 @@ import { AdapterEndpoint, AdapterEndpointConfig } from "./adapter-endpoint";
 import { AdapterRequestError } from "./request-error";
 import { AdapterResponse } from "./response";
 import { TypedPromise } from "./typed-promise";
+import { arrRemove } from "./utils/arr-remove";
 import { extend } from "./utils/extend";
 import { Rejects } from "./utils/rejects-decorator";
 import { trimCharEnd, trimCharStart } from "./utils/trim-char";
@@ -29,14 +30,14 @@ export interface BeforeRequestHandler<XhrReqConfig> {
     config: RequestConfig<XhrReqConfig>,
     body?: unknown,
   ): MaybePromise<
-    void | [url: URL, config: RequestConfig<XhrReqConfig>, body?: unknown]
+    void | [url: URL, config: RequestConfig<XhrReqConfig>, body?: unknown] | AdapterResponse
   >;
 }
 
 export interface AfterResponseHandler {
-  (
-    response: AdapterResponse<any>,
-  ): MaybePromise<void | AdapterResponse>;
+  <Xhr, T>(
+    response: AdapterResponse<Xhr, T>,
+  ): MaybePromise<void | AdapterResponse<Xhr, T>>;
 }
 
 export interface AfterBuildUrlHandler {
@@ -55,10 +56,10 @@ export interface AdapterOptions<XhrReqConfig = DefaultXhrReqConfig> {
   defaultHeaders?: HeadersInit;
   baseURL?: string | URL;
   basePath?: string;
-  onBeforeRequest?: BeforeRequestHandler<XhrReqConfig>;
-  onAfterResponse?: AfterResponseHandler;
-  onAfterBuildUrl?: AfterBuildUrlHandler;
-  onRequestError?: RequestErrorHandler;
+  onBeforeRequest?: BeforeRequestHandler<XhrReqConfig>[];
+  onAfterResponse?: AfterResponseHandler[];
+  onAfterBuildUrl?: AfterBuildUrlHandler[];
+  onRequestError?: RequestErrorHandler[];
 }
 
 export interface RequestConfigBase<XhrReqConfig = DefaultXhrReqConfig> {
@@ -147,10 +148,10 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
   private readonly xhr!: XHRInterface<any, any>;
   private baseConfig: RequestConfig<XhrReqConfig>;
   private baseHeaders!: Headers;
-  private beforeRequest;
-  private afterResponse;
-  private afterBuildUrl;
-  private afterRequestError;
+  private beforeRequestHandlers;
+  private afterResponseHandlers;
+  private afterBuildUrlHandlers;
+  private afterRequestErrorHandlers;
 
   private constructor(
     options?: AdapterOptions<XhrReqConfig>,
@@ -166,10 +167,80 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
 
     this.baseConfig = baseConfig;
     this.baseHeaders = baseHeaders;
-    this.beforeRequest = options?.onBeforeRequest?.bind(options) ?? noop;
-    this.afterResponse = options?.onAfterResponse?.bind(options) ?? noop;
-    this.afterBuildUrl = options?.onAfterBuildUrl?.bind(options) ?? noop;
-    this.afterRequestError = options?.onRequestError?.bind(options) ?? noop;
+
+    this.beforeRequestHandlers = options?.onBeforeRequest ?? [];
+    this.afterResponseHandlers = options?.onAfterResponse ?? [];
+    this.afterBuildUrlHandlers = options?.onAfterBuildUrl ?? [];
+    this.afterRequestErrorHandlers = options?.onRequestError ?? [];
+  }
+
+  private async runBeforeRequestHandlers<T>(
+    url: URL,
+    config: RequestConfig<XhrReqConfig>,
+    body?: unknown,
+  ): Promise<[url: URL, config: RequestConfig<XhrReqConfig>, body?: unknown] | AdapterResponse<XhrResp, T>> {
+    if (this.extendsFrom) {
+      const ov = await this.extendsFrom.runBeforeRequestHandlers(url, config, body);
+      if (AdapterResponse.is(ov)) {
+        return ov as any;
+      }
+      [url, config, body] = ov;
+    }
+
+    for (const handler of this.beforeRequestHandlers) {
+      const override = await handler(url, config, body);
+      if (override) {
+        if (AdapterResponse.is(override)) {
+          return override as any;
+        }
+        url = override[0];
+        config = override[1];
+        body = override[2];
+      }
+    }
+    return [url, config, body] as const;
+  }
+
+  private async runAfterResponseHandlers<T>(response: AdapterResponse<XhrResp, T>) {
+    if (this.extendsFrom) {
+      response = await this.extendsFrom.runAfterResponseHandlers(response);
+    }
+
+    for (const handler of this.afterResponseHandlers) {
+      const override = await handler(response);
+      if (override) {
+        response = override;
+      }
+    }
+    return response;
+  }
+
+  private runAfterBuildUrlHandlers(url: URL) {
+    if (this.extendsFrom) {
+      url = this.extendsFrom.runAfterBuildUrlHandlers(url);
+    }
+
+    for (const handler of this.afterBuildUrlHandlers) {
+      const override = handler(url);
+      if (override) {
+        url = override;
+      }
+    }
+    return url;
+  }
+
+  private runAfterRequestErrorHandlers(error: AdapterRequestError) {
+    if (this.extendsFrom) {
+      error = this.extendsFrom.runAfterRequestErrorHandlers(error);
+    }
+
+    for (const handler of this.afterRequestErrorHandlers) {
+      const override = handler(error);
+      if (override) {
+        error = override;
+      }
+    }
+    return error;
   }
 
   private addContentType(h: Headers) {
@@ -310,14 +381,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
 
       const resp = new AdapterResponse(this, config, data, response);
 
-      if (this.afterResponse) {
-        const override = await this.afterResponse(resp);
-        if (override) {
-          return override as AdapterResponse<XhrResp, T>;
-        }
-      }
-
-      return resp;
+      return await this.runAfterResponseHandlers(resp);
     } catch (error) {
       // only retry if the request was not sent or the response indicates a failure
       // do not retry if the error is dur to timeout, validation error, payload
@@ -355,20 +419,16 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
         u.search = sp.toString();
       }
 
-      if (this.afterBuildUrl) {
-        const override = this.afterBuildUrl(u);
-        if (override) {
-          u = override;
-        }
-      }
+      u = this.runAfterBuildUrlHandlers(u);
 
-      if (this.beforeRequest) {
-        const override = await this.beforeRequest(u, config, body);
-        if (override) {
-          u = override[0];
-          config = override[1] as RequestConfig<XhrReqConfig, T>;
-          body = override[2];
+      const override = await this.runBeforeRequestHandlers(u, config, body);
+      if (override) {
+        if (AdapterResponse.is(override)) {
+          return override as AdapterResponse<XhrResp, T>;
         }
+        u = override[0];
+        config = override[1] as RequestConfig<XhrReqConfig, T>;
+        body = override[2];
       }
 
       return await this.requestInternal(
@@ -391,14 +451,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
         );
       }
 
-      if (this.afterRequestError) {
-        const override = this.afterRequestError(error);
-        if (override) {
-          throw override;
-        }
-      }
-
-      throw error;
+      throw this.runAfterRequestErrorHandlers(error);
     }
   }
 
@@ -457,52 +510,19 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     adapter.baseHeaders = baseHeader;
 
     if (options?.onBeforeRequest) {
-      adapter.beforeRequest = async (u, c, b) => {
-        const override = await this.beforeRequest(u, c, b);
-        if (override) {
-          u = override[0];
-          c = override[1];
-          b = override[2];
-        }
-        return (await options.onBeforeRequest!(u, c, b)) ?? [u, c, b];
-      };
-    } else {
-      adapter.beforeRequest = this.beforeRequest;
+      adapter.beforeRequestHandlers.push(...options.onBeforeRequest);
     }
 
     if (options?.onAfterResponse) {
-      adapter.afterResponse = async (r) => {
-        const override = await this.afterResponse(r);
-        if (override) {
-          r = override;
-        }
-        return (await options.onAfterResponse!(r)) ?? r;
-      };
-    } else {
-      adapter.afterResponse = this.afterResponse;
+      adapter.afterResponseHandlers.push(...options.onAfterResponse);
     }
 
     if (options?.onAfterBuildUrl) {
-      adapter.afterBuildUrl = (u) => {
-        const override = this.afterBuildUrl(u);
-        if (override) {
-          u = override;
-        }
-        return options.onAfterBuildUrl!(u) ?? u;
-      };
-    } else {
-      adapter.afterBuildUrl = this.afterBuildUrl;
+      adapter.afterBuildUrlHandlers.push(...options.onAfterBuildUrl);
     }
 
     if (options?.onRequestError) {
-      adapter.afterRequestError = (err) => {
-        const override = this.afterRequestError(err);
-        if (override) {
-          return options.onRequestError!(override);
-        }
-      };
-    } else {
-      adapter.afterRequestError = this.afterRequestError;
+      adapter.afterRequestErrorHandlers.push(...options.onRequestError);
     }
 
     return adapter;
@@ -548,6 +568,48 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     }
 
     return new AdapterEndpoint(this, params);
+  }
+
+  addHandler(type: "beforeRequest", handler: BeforeRequestHandler<XhrReqConfig>): void;
+  addHandler(type: "afterResponse", handler: AfterResponseHandler): void;
+  addHandler(type: "afterBuildUrl", handler: AfterBuildUrlHandler): void;
+  addHandler(type: "requestError", handler: RequestErrorHandler): void;
+  addHandler(type: string, handler: any) {
+    switch (type) {
+      case "beforeRequest":
+        this.beforeRequestHandlers.push(handler);
+        break;
+      case "afterResponse":
+        this.afterResponseHandlers.push(handler);
+        break;
+      case "afterBuildUrl":
+        this.afterBuildUrlHandlers.push(handler);
+        break;
+      case "requestError":
+        this.afterRequestErrorHandlers.push(handler);
+        break;
+    }
+  }
+
+  removeHandler(type: "beforeRequest", handler: BeforeRequestHandler<XhrReqConfig>): void;
+  removeHandler(type: "afterResponse", handler: AfterResponseHandler): void;
+  removeHandler(type: "afterBuildUrl", handler: AfterBuildUrlHandler): void;
+  removeHandler(type: "requestError", handler: RequestErrorHandler): void;
+  removeHandler(type: string, handler: any) {
+    switch (type) {
+      case "beforeRequest":
+        arrRemove(this.beforeRequestHandlers, handler);
+        break;
+      case "afterResponse":
+        arrRemove(this.afterResponseHandlers, handler);
+        break;
+      case "afterBuildUrl":
+        arrRemove(this.afterBuildUrlHandlers, handler);
+        break;
+      case "requestError":
+        arrRemove(this.afterRequestErrorHandlers, handler);
+        break;
+    }
   }
 }
 
