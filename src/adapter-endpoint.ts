@@ -1,5 +1,5 @@
 import { UrlLiteralParams, urlTemplate } from "url-templater.ts";
-import { type Adapter, type DefaultXhrReqConfig, RequestConfigBase } from "./adapter";
+import { type Adapter, type DefaultXhrReqConfig, RequestConfig, RequestConfigBase } from "./adapter";
 import { AdapterRequestError as AdapterRequestError } from "./request-error";
 import { extend } from "./utils/extend";
 import { Rejects } from "./utils/rejects-decorator";
@@ -82,6 +82,29 @@ type RequestArguments<
     queryParams: UrlLiteralParams<Url>,
     ...ConfigFor<SearchParams, Body, XhrReqConfig>,
   ];
+
+type Eq<T, U> = T extends U ? true : false;
+type Or<A, B> = A extends true ? true : B;
+
+type IsAllOptional<SearchParams extends string[]> = SearchParams extends [infer Elem, ...infer Rest extends string[]]
+  ? Elem extends `?${string}` ? IsAllOptional<Rest> : false
+  : true;
+
+type UrlGenConfig<SearchParams extends string[]> = Eq<SearchParams["length"], 0> extends true
+  ? Pick<RequestConfigBase, "baseURL" | "basePath">
+  : IsAllOptional<SearchParams> extends true ? Pick<RequestConfigBase, "baseURL" | "basePath"> & {
+      searchParams?: SearchParamsRecord<SearchParams>;
+    }
+  : Pick<RequestConfigBase, "baseURL" | "basePath"> & {
+    searchParams: SearchParamsRecord<SearchParams>;
+  };
+
+type UrlParams<Url extends string, SearchParams extends string[] = []> =
+  Or<Eq<SearchParams["length"], 0>, IsAllOptional<SearchParams>> extends true
+    ? UrlLiteralParams<Url> extends Record<string, never> ? [config?: UrlGenConfig<SearchParams>]
+    : [params: UrlLiteralParams<Url>, config?: UrlGenConfig<SearchParams>]
+    : UrlLiteralParams<Url> extends Record<string, never> ? [config: UrlGenConfig<SearchParams>]
+    : [params: UrlLiteralParams<Url>, config: UrlGenConfig<SearchParams>];
 
 type ResolvedParams<Url extends string> = {
   urlParams?: UrlLiteralParams<Url>;
@@ -335,31 +358,32 @@ export class AdapterEndpoint<
   }
 
   url(
-    ...args: SearchParams["length"] extends 0
-      ? [params: UrlLiteralParams<Url>, config?: Pick<RequestConfigBase, "baseURL" | "basePath">]
-      : [
-        params: UrlLiteralParams<Url>,
-        config: Pick<RequestConfigBase, "baseURL" | "basePath"> & {
-          searchParams: Record<SearchParams[number], string>;
-        },
-      ]
+    ...args: UrlParams<Url, SearchParams>
   ): string {
-    const [params, config] = args;
+    let params: UrlLiteralParams<Url> | undefined;
+    let config: RequestConfig<any> | undefined;
+    if (this.urlTemplate.parametersCount === 0) {
+      config = args[0] as RequestConfig<any>;
+    } else {
+      params = args[0] as UrlLiteralParams<Url>;
+      config = args[1] as RequestConfig<any>;
+    }
 
-    const templeRes = this.urlTemplate.generate(params);
+    const templeRes = this.urlTemplate.generate(
+      params ?? ({} as any as UrlLiteralParams<Url>),
+    );
 
     let u = this.adapter["prepareUrl"](
       templeRes,
       extend(this.adapter["baseConfig"], config),
     );
 
-    if (config && "searchParams" in config) {
+    if (config && "searchParams" in config && config.searchParams != null) {
       const sp = new URLSearchParams(config.searchParams);
       u.search = sp.toString();
     }
 
-    const afterBuildUrl = this.adapter["runAfterBuildUrlHandlers"];
-    const override = afterBuildUrl(u);
+    const override = this.adapter["runAfterBuildUrlHandlers"](u);
     if (override) {
       u = override;
     }
