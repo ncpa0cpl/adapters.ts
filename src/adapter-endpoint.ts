@@ -358,12 +358,10 @@ export class AdapterEndpoint<
       u.search = sp.toString();
     }
 
-    const afterBuildUrl = this.adapter["afterBuildUrl"];
-    if (afterBuildUrl) {
-      const override = afterBuildUrl(u);
-      if (override) {
-        u = override;
-      }
+    const afterBuildUrl = this.adapter["runAfterBuildUrlHandlers"];
+    const override = afterBuildUrl(u);
+    if (override) {
+      u = override;
     }
 
     return u.toString();
