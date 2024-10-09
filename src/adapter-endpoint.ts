@@ -3,6 +3,7 @@ import { type Adapter, type DefaultXhrReqConfig, RequestConfig, RequestConfigBas
 import { AdapterRequestError as AdapterRequestError } from "./request-error";
 import { extend } from "./utils/extend";
 import { Rejects } from "./utils/rejects-decorator";
+import { RequestMethod } from "./xhr-interface";
 
 export type ValidateFn<T> = (data: unknown) => data is T;
 
@@ -157,6 +158,8 @@ export class AdapterEndpoint<
         searchParams?: Record<string, string>;
       })
       | undefined,
+    method: RequestMethod,
+    url: string,
   ) {
     if (!this.params.searchParams || this.params.searchParams.length === 0) {
       return;
@@ -174,8 +177,10 @@ export class AdapterEndpoint<
         || config.searchParams[paramName] == null
       ) {
         throw new AdapterRequestError(
-          config,
           `Missing a required search param: ${paramName}`,
+          config,
+          method,
+          url,
         );
       }
     }
@@ -205,7 +210,6 @@ export class AdapterEndpoint<
   @Rejects
   get(...args: RequestArguments<Url, SearchParams, XhrReqConfig>) {
     const { config, urlParams } = this.resolveArgs(args);
-    this.validateSearchParams(config);
 
     let url = "";
     if (urlParams) {
@@ -213,6 +217,8 @@ export class AdapterEndpoint<
     } else {
       url = this.params.url;
     }
+
+    this.validateSearchParams(config, "GET", url);
 
     return this.adapter.request(
       "GET",
@@ -226,7 +232,6 @@ export class AdapterEndpoint<
   @Rejects
   post(...args: RequestArguments<Url, SearchParams, XhrReqConfig, PostReqT>) {
     const { config, urlParams } = this.resolveArgs(args);
-    this.validateSearchParams(config);
 
     let url = "";
     if (urlParams) {
@@ -235,9 +240,11 @@ export class AdapterEndpoint<
       url = this.params.url;
     }
 
+    this.validateSearchParams(config, "POST", url);
+
     if (this.params.validateRequest?.post) {
       if (!this.params.validateRequest.post(config?.body)) {
-        throw new AdapterRequestError(config, "Invalid request body");
+        throw new AdapterRequestError("Invalid request body", config, "POST", url);
       }
     }
 
@@ -254,7 +261,6 @@ export class AdapterEndpoint<
   @Rejects
   patch(...args: RequestArguments<Url, SearchParams, XhrReqConfig, PatchReqT>) {
     const { config, urlParams } = this.resolveArgs(args);
-    this.validateSearchParams(config);
 
     let url = "";
     if (urlParams) {
@@ -263,9 +269,11 @@ export class AdapterEndpoint<
       url = this.params.url;
     }
 
+    this.validateSearchParams(config, "PATCH", url);
+
     if (this.params.validateRequest?.patch) {
       if (!this.params.validateRequest.patch(config?.body)) {
-        throw new AdapterRequestError(config, "Invalid request body");
+        throw new AdapterRequestError("Invalid request body", config, "PATCH", url);
       }
     }
 
@@ -282,7 +290,6 @@ export class AdapterEndpoint<
   @Rejects
   put(...args: RequestArguments<Url, SearchParams, XhrReqConfig, PutReqT>) {
     const { config, urlParams } = this.resolveArgs(args);
-    this.validateSearchParams(config);
 
     let url = "";
     if (urlParams) {
@@ -291,9 +298,11 @@ export class AdapterEndpoint<
       url = this.params.url;
     }
 
+    this.validateSearchParams(config, "PUT", url);
+
     if (this.params.validateRequest?.put) {
       if (!this.params.validateRequest.put(config?.body)) {
-        throw new AdapterRequestError(config, "Invalid request body");
+        throw new AdapterRequestError("Invalid request body", config, "PUT", url);
       }
     }
 
@@ -312,7 +321,6 @@ export class AdapterEndpoint<
     ...args: RequestArguments<Url, SearchParams, XhrReqConfig, DeleteReqT>
   ) {
     const { config, urlParams } = this.resolveArgs(args);
-    this.validateSearchParams(config);
 
     let url = "";
     if (urlParams) {
@@ -321,9 +329,11 @@ export class AdapterEndpoint<
       url = this.params.url;
     }
 
+    this.validateSearchParams(config, "DELETE", url);
+
     if (this.params.validateRequest?.delete) {
       if (!this.params.validateRequest.delete(config?.body)) {
-        throw new AdapterRequestError(config, "Invalid request body");
+        throw new AdapterRequestError("Invalid request body", config, "DELETE", url);
       }
     }
 
@@ -340,7 +350,6 @@ export class AdapterEndpoint<
   @Rejects
   options(...args: RequestArguments<Url, SearchParams, XhrReqConfig>) {
     const { config, urlParams } = this.resolveArgs(args);
-    this.validateSearchParams(config);
 
     let url = "";
     if (urlParams) {
@@ -348,6 +357,9 @@ export class AdapterEndpoint<
     } else {
       url = this.params.url;
     }
+
+    this.validateSearchParams(config, "OPTIONS", url);
+
     return this.adapter.request(
       "OPTIONS",
       url,

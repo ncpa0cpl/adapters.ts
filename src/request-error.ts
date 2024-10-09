@@ -1,6 +1,7 @@
 import { RequestConfig } from ".";
+import { RequestMethod } from "./xhr-interface";
 
-export class AdapterRequestError extends Error {
+export class AdapterRequestError<XhrResp = Response> extends Error {
   static is(err: unknown): err is AdapterRequestError {
     return err instanceof AdapterRequestError;
   }
@@ -8,10 +9,13 @@ export class AdapterRequestError extends Error {
   declare public cause?: unknown;
 
   constructor(
-    public readonly config: RequestConfig<any, any> | undefined,
     reason: string,
-    status?: number,
-    cause?: any,
+    public readonly config?: RequestConfig<any, any> | undefined,
+    public readonly method?: RequestMethod,
+    public readonly url?: string,
+    public readonly status?: number,
+    public readonly xhrResponse?: XhrResp,
+    cause?: unknown,
   ) {
     super(reason, { cause });
     this.name = "AdapterRequestError";

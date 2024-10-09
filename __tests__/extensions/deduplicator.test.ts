@@ -116,25 +116,31 @@ describe("Deduplicator", () => {
 
     await expect(resp1Promise).rejects.toThrow(
       new AdapterRequestError(
-        expect.any(Object),
         "Unexpected error",
-        undefined,
+        expect.any(Object),
+        "GET",
+        "http://localhost/api/devices",
+        expect.any(Object),
         new Error("Request failed"),
       ),
     );
     await expect(resp2Promise).rejects.toThrow(
       new AdapterRequestError(
-        expect.any(Object),
         "Unexpected error",
-        undefined,
+        expect.any(Object),
+        "GET",
+        "http://localhost/api/devices",
+        expect.any(Object),
         new Error("Request failed"),
       ),
     );
     await expect(resp3Promise).rejects.toThrow(
       new AdapterRequestError(
-        expect.any(Object),
         "Unexpected error",
-        undefined,
+        expect.any(Object),
+        "GET",
+        "http://localhost/api/devices",
+        expect.any(Object),
         new Error("Request failed"),
       ),
     );

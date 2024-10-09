@@ -45,11 +45,11 @@ export interface AfterBuildUrlHandler {
   (url: URL): void | URL;
 }
 
-export interface RequestErrorHandler {
-  (error: AdapterRequestError): void | AdapterRequestError;
+export interface RequestErrorHandler<XhrResp> {
+  (error: AdapterRequestError<XhrResp>): void | AdapterRequestError<XhrResp>;
 }
 
-export interface AdapterOptions<XhrReqConfig = DefaultXhrReqConfig> {
+export interface AdapterOptions<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
   defaultTimeout?: number;
   defaultAutoRetry?: undefined | number;
   defaultRetryDelay?: number;
@@ -60,7 +60,7 @@ export interface AdapterOptions<XhrReqConfig = DefaultXhrReqConfig> {
   onBeforeRequest?: BeforeRequestHandler<XhrReqConfig>[];
   onAfterResponse?: AfterResponseHandler[];
   onAfterBuildUrl?: AfterBuildUrlHandler[];
-  onRequestError?: RequestErrorHandler[];
+  onRequestError?: RequestErrorHandler<XhrResp>[];
 }
 
 export interface RequestConfigBase<XhrReqConfig = DefaultXhrReqConfig> {
@@ -107,7 +107,9 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     return [outConf, outHeaders] as const;
   }
 
-  private static initOptionsToBaseConfig<XhrReqConfig = DefaultXhrReqConfig>(options?: AdapterOptions<XhrReqConfig>) {
+  private static initOptionsToBaseConfig<XhrReqConfig, XhrResp>(
+    options?: AdapterOptions<XhrReqConfig, XhrResp>,
+  ) {
     const baseConfig: RequestConfigBase<XhrReqConfig> = {};
     let baseHeaders: Headers;
 
@@ -155,7 +157,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
   private afterRequestErrorHandlers;
 
   private constructor(
-    options?: AdapterOptions<XhrReqConfig>,
+    options?: AdapterOptions<XhrReqConfig, XhrResp>,
     xhr?: XHRInterface<XhrReqConfig, any>,
   ) {
     if (xhr) {
@@ -186,15 +188,16 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
       if (AdapterResponse.is(ov)) {
         return ov as any;
       }
-      [url, config, body] = ov;
+      [url, config, body] = ov as [URL, RequestConfig<XhrReqConfig>, unknown];
     }
 
     for (const handler of this.beforeRequestHandlers) {
-      const override = await handler(url, config, body, method);
+      let override = await handler(url, config, body, method);
       if (override) {
         if (AdapterResponse.is(override)) {
           return override as any;
         }
+        override = override as [URL, RequestConfig<XhrReqConfig>, unknown];
         url = override[0];
         config = override[1];
         body = override[2];
@@ -231,7 +234,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     return url;
   }
 
-  private runAfterRequestErrorHandlers(error: AdapterRequestError) {
+  private runAfterRequestErrorHandlers(error: AdapterRequestError<XhrResp>) {
     if (this.extendsFrom) {
       error = this.extendsFrom.runAfterRequestErrorHandlers(error);
     }
@@ -245,14 +248,17 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     return error;
   }
 
-  private handleRequestError(err: unknown, config: RequestConfig<XhrReqConfig>) {
-    let error: AdapterRequestError;
+  private handleRequestError(err: unknown, config: RequestConfig<XhrReqConfig>, method: RequestMethod, url?: string) {
+    let error: AdapterRequestError<XhrResp>;
     if (AdapterRequestError.is(err)) {
-      error = err;
+      error = err as AdapterRequestError<XhrResp>;
     } else {
-      error = new AdapterRequestError(
-        config,
+      error = new AdapterRequestError<XhrResp>(
         "Unexpected error",
+        config,
+        method,
+        url,
+        undefined,
         undefined,
         err,
       );
@@ -322,7 +328,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     return finalConfig;
   }
 
-  private createTimeout(config?: RequestConfig<XhrReqConfig, any>) {
+  private createTimeout(config: RequestConfig<XhrReqConfig, any>, method: RequestMethod, url: string) {
     if (!config || !config.timeout) {
       return [undefined, noop] as const;
     }
@@ -331,7 +337,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
 
     const tid = setTimeout(() => {
       abortController.abort(
-        new AdapterRequestError(config, "Request aborted, timeout exceeded"),
+        new AdapterRequestError("Request aborted, timeout exceeded", config, method, url),
       );
     }, config.timeout);
 
@@ -358,13 +364,14 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     attemptsLeft = 0,
   ): Promise<AdapterResponse<XhrResp, T>> {
     let responseStatus = -1;
+    const urlStr = url.toString();
 
     try {
-      const [abortSignal, clearTimeout] = this.createTimeout(config);
+      const [abortSignal, clearTimeout] = this.createTimeout(config, method, urlStr);
 
       const [response, status, statusText] = await this.xhr.sendRequest({
         method,
-        url: url.toString(),
+        url: urlStr,
         config: config.xhr,
         headers: config.headers as Headers,
         body: body,
@@ -375,25 +382,36 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
       responseStatus = status;
 
       if (status >= 400 && status < 500) {
-        throw new AdapterRequestError(
-          config,
+        throw new AdapterRequestError<XhrResp>(
           `Request failure: [${status}] ${statusText}`,
-          response,
+          config,
+          method,
+          urlStr,
           status,
+          response,
         );
       } else if (status >= 500) {
-        throw new AdapterRequestError(
-          config,
+        throw new AdapterRequestError<XhrResp>(
           `Server error: [${status}] ${statusText}`,
-          response,
+          config,
+          method,
+          urlStr,
           status,
+          response,
         );
       }
 
       let data = (await this.xhr.extractPayload(response, config.xhr)) as T;
       if (config.validate) {
         if (!config.validate(data)) {
-          throw new AdapterRequestError(config, "Invalid response data");
+          throw new AdapterRequestError<XhrResp>(
+            "Invalid response data",
+            config,
+            method,
+            urlStr,
+            status,
+            response,
+          );
         }
       }
 
@@ -428,6 +446,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     body?: any,
     // @ts-expect-error
   ): TypedPromise<AdapterResponse<XhrResp, T>, AdapterRequestError> {
+    let urlStr = String(url);
     try {
       config = this.createRequestConfig(method, config);
 
@@ -436,17 +455,21 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
         const sp = new URLSearchParams(config.searchParams);
         u.search = sp.toString();
       }
+      urlStr = u.toString();
 
       u = this.runAfterBuildUrlHandlers(u);
+      urlStr = u.toString();
 
-      const override = await this.runBeforeRequestHandlers(u, config, body, method);
+      let override = await this.runBeforeRequestHandlers(u, config, body, method);
       if (override) {
         if (AdapterResponse.is(override)) {
           return override as AdapterResponse<XhrResp, T>;
         }
+        override = override as [URL, RequestConfig<XhrReqConfig, T>, any];
         u = override[0];
         config = override[1] as RequestConfig<XhrReqConfig, T>;
         body = override[2];
+        urlStr = u.toString();
       }
 
       return await this.requestInternal(
@@ -457,7 +480,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
         config.autoRetry ? config.autoRetry - 1 : undefined,
       );
     } catch (err) {
-      throw this.handleRequestError(err, config!);
+      throw this.handleRequestError(err, config!, method, urlStr);
     }
   }
 
@@ -503,7 +526,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     return this.request("OPTIONS", url, config);
   }
 
-  extend(options?: AdapterOptions<XhrReqConfig>) {
+  extend(options?: AdapterOptions<XhrReqConfig, XhrResp>) {
     const adapter = new Adapter<XhrReqConfig, XhrResp>(undefined, this.xhr);
     adapter.extendsFrom = this;
 
@@ -564,7 +587,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
         DeleteReqT
       >
       & {
-        options?: AdapterOptions<XhrReqConfig>;
+        options?: AdapterOptions<XhrReqConfig, XhrResp>;
       },
   ) {
     if (params.options) {
@@ -579,7 +602,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
   addHandler(type: "beforeRequest", handler: BeforeRequestHandler<XhrReqConfig>): void;
   addHandler(type: "afterResponse", handler: AfterResponseHandler): void;
   addHandler(type: "afterBuildUrl", handler: AfterBuildUrlHandler): void;
-  addHandler(type: "requestError", handler: RequestErrorHandler): void;
+  addHandler(type: "requestError", handler: RequestErrorHandler<XhrResp>): void;
   addHandler(type: string, handler: any) {
     switch (type) {
       case "beforeRequest":
@@ -600,7 +623,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
   removeHandler(type: "beforeRequest", handler: BeforeRequestHandler<XhrReqConfig>): void;
   removeHandler(type: "afterResponse", handler: AfterResponseHandler): void;
   removeHandler(type: "afterBuildUrl", handler: AfterBuildUrlHandler): void;
-  removeHandler(type: "requestError", handler: RequestErrorHandler): void;
+  removeHandler(type: "requestError", handler: RequestErrorHandler<XhrResp>): void;
   removeHandler(type: string, handler: any) {
     switch (type) {
       case "beforeRequest":

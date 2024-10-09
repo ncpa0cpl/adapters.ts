@@ -2,7 +2,7 @@ import { Adapter } from "./adapter";
 import { RequestMethod } from "./xhr-interface";
 
 export class AdapterResponse<XhrResp = Response, T = unknown> {
-  static is<U = unknown>(v: unknown): v is AdapterResponse<any, U> {
+  static is<U = any>(v: unknown): v is AdapterResponse<any, U> {
     return v instanceof AdapterResponse;
   }
 
