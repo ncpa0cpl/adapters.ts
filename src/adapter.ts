@@ -100,6 +100,10 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
 
     const outConf = extend(baseConf, targetConf);
 
+    if (baseConf.basePath && targetConf.basePath) {
+      outConf.basePath = trimCharEnd(baseConf.basePath, "/") + "/" + trimCharStart(targetConf.basePath, "/");
+    }
+
     if (targetConf.xhr && baseConf.xhr) {
       outConf.xhr = extend(baseConf.xhr, targetConf.xhr);
     }

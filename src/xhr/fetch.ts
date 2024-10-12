@@ -16,6 +16,9 @@ export class FetchXHR implements XHRInterface<DefaultXhrReqConfig, FetchResponse
     headers?: Headers | undefined;
     abortSignal?: AbortSignal | undefined;
   }): Promise<[FetchResponse<T>, number, string]> {
+    if (params.headers) {
+      params.headers = new Headers(params.headers);
+    }
     const init: RequestInit = { ...params.config, method: params.method };
     if (params.body) {
       let contentType = params.headers?.get("Content-Type");

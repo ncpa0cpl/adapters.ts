@@ -415,4 +415,31 @@ describe("Adapter", () => {
       });
     });
   });
+
+  describe("extending the adapter", () => {
+    it("allows to concat basePaths", async () => {
+      const api = Adapter.new({
+        baseURL: "https://my-domain.com",
+        basePath: "api",
+      });
+
+      const devices = api.extend({
+        basePath: "devices",
+      });
+
+      const deviceInfo = devices.extend({
+        basePath: "info",
+      });
+
+      let requestedUrl = "";
+      fetchMock.mockImplementation(async (url, options) => {
+        requestedUrl = url;
+        return Response.json("OK");
+      });
+
+      await deviceInfo.get("/api/list");
+
+      expect(requestedUrl).toEqual("https://my-domain.com/api/devices/info/api/list");
+    });
+  });
 });
