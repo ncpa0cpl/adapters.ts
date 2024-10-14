@@ -55,12 +55,12 @@ type SearchParamsRecord<SearchParams extends readonly string[]> =
 
 type ConfigFor<
   SearchParams extends readonly string[] = [],
-  Body = never,
+  Body = unknown,
   XhrReqConfig = DefaultXhrReqConfig,
 > = SearchParams["length"] extends 0
-  ? [Body] extends [never] ? [config?: RequestConfigBase<XhrReqConfig> & { body?: any }]
+  ? unknown extends Body ? [config?: RequestConfigBase<XhrReqConfig> & { body?: any }]
   : [config: RequestConfigBase<XhrReqConfig> & { body: Body }]
-  : [Body] extends [never] ? [
+  : unknown extends Body ? [
       config: RequestConfigBase<XhrReqConfig> & {
         searchParams: SearchParamsRecord<SearchParams>;
         body?: any;
@@ -77,7 +77,7 @@ type RequestArguments<
   Url extends string,
   SearchParams extends string[] = [],
   XhrReqConfig = DefaultXhrReqConfig,
-  Body = never,
+  Body = unknown,
 > = UrlLiteralParams<Url> extends Record<string, never> ? ConfigFor<SearchParams, Body, XhrReqConfig>
   : [
     queryParams: UrlLiteralParams<Url>,

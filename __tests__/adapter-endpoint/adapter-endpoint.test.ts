@@ -88,7 +88,30 @@ describe("Adapter.endpoint()", () => {
     expect(resp2.data).toEqual({ id: 2 });
   });
 
-  it("simple POST endpoint", async () => {
+  it("simple POST endpoint without body", async () => {
+    fetchMock.mockImplementation(async (url, options) => {
+      if (
+        url === "http://127.0.0.1/api/product"
+        && options?.method === "POST"
+      ) {
+        return Response.json("OK");
+      }
+      throw new Error("unexpected request");
+    });
+
+    const e = adapter.endpoint({
+      url: "/api/product",
+      validate: {
+        post: (data: unknown): data is string => true,
+      },
+    });
+
+    const resp = await e.post();
+
+    expect(resp.data).toEqual("OK");
+  });
+
+  it("simple POST endpoint with body", async () => {
     fetchMock.mockImplementation(async (url, options) => {
       if (
         url === "http://127.0.0.1/api/product"
@@ -114,7 +137,30 @@ describe("Adapter.endpoint()", () => {
     expect(resp.data).toEqual({ id: 1, name: "Johhny" });
   });
 
-  it("simple POST endpoint eith searchParams", async () => {
+  it("simple POST endpoint with searchParams without body", async () => {
+    fetchMock.mockImplementation(async (url, options) => {
+      const u = new URL(url);
+      return Response.json({
+        foo: u.searchParams.get("foo"),
+      });
+    });
+
+    const e = adapter.endpoint({
+      url: "/api/product",
+      searchParams: ["foo", "?bar"],
+      validate: {
+        post: (data: unknown): data is { foo: string } => true,
+      },
+    });
+
+    const resp = await e.post({
+      searchParams: { foo: "FOO" },
+    });
+
+    expect(resp.data).toEqual({ foo: "FOO" });
+  });
+
+  it("simple POST endpoint with searchParams with body", async () => {
     fetchMock.mockImplementation(async (url, options) => {
       const u = new URL(url);
 
@@ -194,7 +240,7 @@ describe("Adapter.endpoint()", () => {
       },
     });
 
-    await expect(e.get()).rejects.toThrow("Invalid response data");
+    await expect(e.get({})).rejects.toThrow("Invalid response data");
     await expect(e.post({ body: {} })).rejects.toThrow("Invalid response data");
     await expect(e.post({ body: { prop: "value" } })).resolves.toMatchObject({
       data: {
