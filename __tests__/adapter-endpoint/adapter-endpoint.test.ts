@@ -23,6 +23,7 @@ describe("Adapter.endpoint()", () => {
 
     const e = adapter.endpoint({
       url: "/api/users",
+      accepts: ["get"],
       validate: {
         get: (data: unknown): data is Array<{ name: string }> => true,
       },
@@ -101,6 +102,7 @@ describe("Adapter.endpoint()", () => {
 
     const e = adapter.endpoint({
       url: "/api/product",
+      accepts: ["post"],
       validate: {
         post: (data: unknown): data is string => true,
       },
@@ -234,6 +236,7 @@ describe("Adapter.endpoint()", () => {
 
     const e = adapter.endpoint({
       url: "/api/product",
+      accepts: ["get", "post"],
       validate: {
         get: validate,
         post: validate,

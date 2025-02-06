@@ -7,6 +7,18 @@ import { RequestMethod } from "./xhr-interface";
 
 export type ValidateFn<T> = (data: unknown) => data is T;
 
+export type HttpMethod = "get" | "post" | "patch" | "put" | "delete" | "options";
+type AllHttpMethods = ["get", "post", "patch", "put", "delete", "options"];
+
+type IncludesAll<T extends any[], U extends any[]> = U[number] extends T[number] ? true : false;
+type ArrDiff<T extends any[], U extends any[]> = U extends [infer First, ...infer Rest]
+  ? First extends T[number] ? ArrDiff<Exclude<T, First>, Rest> : [First, ...ArrDiff<T, Rest>]
+  : [];
+
+export type Endpoint<AE, AcceptedMethods extends HttpMethod[]> = IncludesAll<AcceptedMethods, AllHttpMethods> extends
+  true ? AE
+  : Omit<AE, ArrDiff<AcceptedMethods, AllHttpMethods>[number]>;
+
 export interface AdapterEndpointConfig<
   Url extends string,
   SearchParams extends string[],
@@ -20,9 +32,41 @@ export interface AdapterEndpointConfig<
   PatchReqT = unknown,
   PutReqT = unknown,
   DeleteReqT = unknown,
+  AcceptedMethods extends HttpMethod[] = HttpMethod[],
 > {
+  /**
+   * The url or a url template for this endpoint.
+   *
+   * @example
+   * adapter.endpoint({
+   *   url: "/users/{userId}"
+   * });
+   */
   url: Url;
+  /**
+   * Names of all the different search parameters that can be used with this endpoint url.
+   * Search params can be optional or required, by default they are required, you can
+   * make them optional by prefixing them with a question mark.
+   *
+   * @example
+   * adapter.endpoint({
+   *   searchParams: ["limit", "?page"]
+   * });
+   */
   searchParams?: SearchParams;
+  /**
+   * List of HTTP Request methods that this enpoint can accept.
+   *
+   * @example
+   * adapter.endpoint({
+   *   accepts: ["get", "post"]
+   * });
+   */
+  accepts?: AcceptedMethods;
+  /**
+   * Validators for different request methods, the received response will be ran through those,
+   * and if the validation is not successfull call to that endpoint will reject.
+   */
   validate?: {
     get?: ValidateFn<GetT>;
     post?: ValidateFn<PostT>;
@@ -31,6 +75,10 @@ export interface AdapterEndpointConfig<
     delete?: ValidateFn<DeleteT>;
     options?: ValidateFn<OptionsT>;
   };
+  /**
+   * Request body validators for different request methods, the passed body will be ran through those,
+   * and if the validation is not successfull call to that endpoint will reject.
+   */
   validateRequest?: {
     post?: ValidateFn<PostReqT>;
     patch?: ValidateFn<PatchReqT>;
@@ -129,6 +177,7 @@ export class AdapterEndpoint<
   DeleteReqT = unknown,
   XhrReqConfig = DefaultXhrReqConfig,
   XhrResp = Response,
+  const AcceptedMethods extends HttpMethod[] = HttpMethod[],
 > {
   private urlTemplate;
 
@@ -146,7 +195,8 @@ export class AdapterEndpoint<
       PostReqT,
       PatchReqT,
       PutReqT,
-      DeleteReqT
+      DeleteReqT,
+      AcceptedMethods
     >,
   ) {
     this.urlTemplate = urlTemplate(params.url);
@@ -207,8 +257,24 @@ export class AdapterEndpoint<
     };
   }
 
+  private ensureAccepted(type: HttpMethod) {
+    if (this.params.accepts) {
+      const isAccepted = this.params.accepts.includes(type);
+      if (!isAccepted) {
+        throw new AdapterRequestError(
+          `Method ${type} is not accepted by this endpoint`,
+          undefined,
+          type.toUpperCase() as any,
+          this.params.url,
+        );
+      }
+    }
+  }
+
   @Rejects
   get(...args: RequestArguments<Url, SearchParams, XhrReqConfig>) {
+    this.ensureAccepted("get");
+
     const { config, urlParams } = this.resolveArgs(args);
 
     let url = "";
@@ -231,6 +297,8 @@ export class AdapterEndpoint<
 
   @Rejects
   post(...args: RequestArguments<Url, SearchParams, XhrReqConfig, PostReqT>) {
+    this.ensureAccepted("post");
+
     const { config, urlParams } = this.resolveArgs(args);
 
     let url = "";
@@ -260,6 +328,8 @@ export class AdapterEndpoint<
 
   @Rejects
   patch(...args: RequestArguments<Url, SearchParams, XhrReqConfig, PatchReqT>) {
+    this.ensureAccepted("patch");
+
     const { config, urlParams } = this.resolveArgs(args);
 
     let url = "";
@@ -289,6 +359,8 @@ export class AdapterEndpoint<
 
   @Rejects
   put(...args: RequestArguments<Url, SearchParams, XhrReqConfig, PutReqT>) {
+    this.ensureAccepted("put");
+
     const { config, urlParams } = this.resolveArgs(args);
 
     let url = "";
@@ -320,6 +392,8 @@ export class AdapterEndpoint<
   delete(
     ...args: RequestArguments<Url, SearchParams, XhrReqConfig, DeleteReqT>
   ) {
+    this.ensureAccepted("delete");
+
     const { config, urlParams } = this.resolveArgs(args);
 
     let url = "";
@@ -349,6 +423,8 @@ export class AdapterEndpoint<
 
   @Rejects
   options(...args: RequestArguments<Url, SearchParams, XhrReqConfig>) {
+    this.ensureAccepted("options");
+
     const { config, urlParams } = this.resolveArgs(args);
 
     let url = "";

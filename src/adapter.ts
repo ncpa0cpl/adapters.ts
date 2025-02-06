@@ -1,4 +1,4 @@
-import { AdapterEndpoint, AdapterEndpointConfig } from "./adapter-endpoint";
+import { AdapterEndpoint, AdapterEndpointConfig, Endpoint, HttpMethod } from "./adapter-endpoint";
 import { AdapterRequestError } from "./request-error";
 import { AdapterResponse } from "./response";
 import { TypedPromise } from "./typed-promise";
@@ -574,6 +574,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     PatchReqT = unknown,
     PutReqT = unknown,
     DeleteReqT = unknown,
+    const AcceptedMethods extends HttpMethod[] = HttpMethod[],
   >(
     params:
       & AdapterEndpointConfig<
@@ -588,19 +589,37 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
         PostReqT,
         PatchReqT,
         PutReqT,
-        DeleteReqT
+        DeleteReqT,
+        AcceptedMethods
       >
       & {
         options?: AdapterOptions<XhrReqConfig, XhrResp>;
       },
-  ) {
+  ): Endpoint<
+    AdapterEndpoint<
+      Url,
+      SearchParams,
+      GetT,
+      PostT,
+      PatchT,
+      PutT,
+      DeleteT,
+      OptionsT,
+      PostReqT,
+      PatchReqT,
+      PutReqT,
+      DeleteReqT,
+      AcceptedMethods
+    >,
+    AcceptedMethods
+  > {
     if (params.options) {
       const { options, ...rest } = params;
       const adapter = this.extend(options);
-      return new AdapterEndpoint(adapter, rest);
+      return new AdapterEndpoint(adapter, rest) as any;
     }
 
-    return new AdapterEndpoint(this, params);
+    return new AdapterEndpoint(this, params) as any;
   }
 
   addHandler(type: "beforeRequest", handler: BeforeRequestHandler<XhrReqConfig>): void;
