@@ -404,7 +404,7 @@ describe("Adapter", () => {
           "application/octet-stream",
         );
         expect(options?.body).toBeInstanceOf(Blob);
-        expect((options?.body as Blob).text()).resolves.toEqual("hello");
+        await expect((options?.body as Blob).text()).resolves.toEqual("hello");
 
         return Response.json("ok");
       });

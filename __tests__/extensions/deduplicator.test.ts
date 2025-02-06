@@ -120,8 +120,8 @@ describe("Deduplicator", () => {
         expect.any(Object),
         "GET",
         "http://localhost/api/devices",
-        expect.any(Object),
-        new Error("Request failed"),
+        undefined,
+        undefined,
       ),
     );
     await expect(resp2Promise).rejects.toThrow(
@@ -130,8 +130,8 @@ describe("Deduplicator", () => {
         expect.any(Object),
         "GET",
         "http://localhost/api/devices",
-        expect.any(Object),
-        new Error("Request failed"),
+        undefined,
+        undefined,
       ),
     );
     await expect(resp3Promise).rejects.toThrow(
@@ -140,8 +140,8 @@ describe("Deduplicator", () => {
         expect.any(Object),
         "GET",
         "http://localhost/api/devices",
-        expect.any(Object),
-        new Error("Request failed"),
+        undefined,
+        undefined,
       ),
     );
 

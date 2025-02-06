@@ -514,7 +514,7 @@ describe("Adapter.endpoint()", () => {
       throw new Error("unexpected request");
     });
 
-    expect(e.get()).rejects.toThrow("Invalid response data");
-    expect(e.post()).rejects.toThrow("Invalid response data");
+    await expect(e.get()).rejects.toThrow("Invalid response data");
+    await expect(e.post()).rejects.toThrow("Invalid response data");
   });
 });
