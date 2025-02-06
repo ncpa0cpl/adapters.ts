@@ -89,6 +89,30 @@ film.patch({ id: 1 }, { title: "A New Hope" }).then(response => {
 A basic method returning `true` with appropraite type definition can be used insted to only provide type definitions.
 (e.x. `(data): data is MyObject => true`)
 
+## Standard Schema Validation
+
+Adapters also accept any validators that implement the [Standard Schema](https://github.com/standard-schema/standard-schema).
+This means you can use schemas created with libraries like Zod, Valibot, or ArkType.
+
+### Example
+
+```typescript
+import { adapter } from "adapters.ts";
+import z from "zod";
+
+const filmSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+});
+
+adapter.endpoint({
+  url: "/api/films/{id}",
+  validate: {
+    get: filmSchema,
+  },
+});
+```
+
 ## Url templating
 
 [See here how to create more advanced URL templates](https://github.com/ncpa0cpl/url-templater?tab=readme-ov-file#url-templaterts)
