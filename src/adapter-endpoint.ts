@@ -1,11 +1,13 @@
 import { UrlLiteralParams, urlTemplate } from "url-templater.ts";
 import { type Adapter, type DefaultXhrReqConfig, RequestConfig, RequestConfigBase } from "./adapter";
 import { AdapterRequestError as AdapterRequestError } from "./request-error";
+import { StandardSchemaV1 } from "./standar-schema/interface";
+import { validate } from "./standar-schema/validate";
 import { extend } from "./utils/extend";
 import { Rejects } from "./utils/rejects-decorator";
 import { RequestMethod } from "./xhr-interface";
 
-export type ValidateFn<T> = (data: unknown) => data is T;
+export type Validator<T> = ((data: unknown) => data is T) | StandardSchemaV1<unknown, T>;
 
 export type HttpMethod = "get" | "post" | "patch" | "put" | "delete" | "options";
 type AllHttpMethods = ["get", "post", "patch", "put", "delete", "options"];
@@ -68,22 +70,22 @@ export interface AdapterEndpointConfig<
    * and if the validation is not successfull call to that endpoint will reject.
    */
   validate?: {
-    get?: ValidateFn<GetT>;
-    post?: ValidateFn<PostT>;
-    patch?: ValidateFn<PatchT>;
-    put?: ValidateFn<PutT>;
-    delete?: ValidateFn<DeleteT>;
-    options?: ValidateFn<OptionsT>;
+    get?: Validator<GetT>;
+    post?: Validator<PostT>;
+    patch?: Validator<PatchT>;
+    put?: Validator<PutT>;
+    delete?: Validator<DeleteT>;
+    options?: Validator<OptionsT>;
   };
   /**
    * Request body validators for different request methods, the passed body will be ran through those,
    * and if the validation is not successfull call to that endpoint will reject.
    */
   validateRequest?: {
-    post?: ValidateFn<PostReqT>;
-    patch?: ValidateFn<PatchReqT>;
-    put?: ValidateFn<PutReqT>;
-    delete?: ValidateFn<DeleteReqT>;
+    post?: Validator<PostReqT>;
+    patch?: Validator<PatchReqT>;
+    put?: Validator<PutReqT>;
+    delete?: Validator<DeleteReqT>;
   };
 }
 
@@ -311,7 +313,7 @@ export class AdapterEndpoint<
     this.validateSearchParams(config, "POST", url);
 
     if (this.params.validateRequest?.post) {
-      if (!this.params.validateRequest.post(config?.body)) {
+      if (!validate(this.params.validateRequest.post, config?.body)) {
         throw new AdapterRequestError("Invalid request body", config, "POST", url);
       }
     }
@@ -342,7 +344,7 @@ export class AdapterEndpoint<
     this.validateSearchParams(config, "PATCH", url);
 
     if (this.params.validateRequest?.patch) {
-      if (!this.params.validateRequest.patch(config?.body)) {
+      if (!validate(this.params.validateRequest.patch, config?.body)) {
         throw new AdapterRequestError("Invalid request body", config, "PATCH", url);
       }
     }
@@ -373,7 +375,7 @@ export class AdapterEndpoint<
     this.validateSearchParams(config, "PUT", url);
 
     if (this.params.validateRequest?.put) {
-      if (!this.params.validateRequest.put(config?.body)) {
+      if (!validate(this.params.validateRequest.put, config?.body)) {
         throw new AdapterRequestError("Invalid request body", config, "PUT", url);
       }
     }
@@ -406,7 +408,7 @@ export class AdapterEndpoint<
     this.validateSearchParams(config, "DELETE", url);
 
     if (this.params.validateRequest?.delete) {
-      if (!this.params.validateRequest.delete(config?.body)) {
+      if (!validate(this.params.validateRequest.delete, config?.body)) {
         throw new AdapterRequestError("Invalid request body", config, "DELETE", url);
       }
     }

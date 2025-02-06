@@ -1,6 +1,8 @@
-import { AdapterEndpoint, AdapterEndpointConfig, Endpoint, HttpMethod } from "./adapter-endpoint";
+import { AdapterEndpoint, AdapterEndpointConfig, Endpoint, HttpMethod, Validator } from "./adapter-endpoint";
 import { AdapterRequestError } from "./request-error";
 import { AdapterResponse } from "./response";
+import { StandardSchemaV1 } from "./standar-schema/interface";
+import { validate } from "./standar-schema/validate";
 import { TypedPromise } from "./typed-promise";
 import { arrRemove } from "./utils/arr-remove";
 import { extend } from "./utils/extend";
@@ -77,7 +79,7 @@ export interface RequestConfigBase<XhrReqConfig = DefaultXhrReqConfig> {
 export interface RequestConfig<XhrReqConfig = DefaultXhrReqConfig, T = unknown>
   extends RequestConfigBase<XhrReqConfig>
 {
-  validate?: (data: unknown) => data is T;
+  validate?: Validator<T>;
   searchParams?: URLSearchParams | string[][] | Record<string, string>;
 }
 
@@ -407,7 +409,8 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
 
       let data = (await this.xhr.extractPayload(response, config.xhr)) as T;
       if (config.validate) {
-        if (!config.validate(data)) {
+        let issues: readonly StandardSchemaV1.Issue[] | undefined;
+        if (!validate(config.validate, data, iss => (issues = iss))) {
           throw new AdapterRequestError<XhrResp>(
             "Invalid response data",
             config,
@@ -415,7 +418,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
             urlStr,
             status,
             response,
-          );
+          ).withIssues(issues);
         }
       }
 

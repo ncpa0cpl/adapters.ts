@@ -1,4 +1,5 @@
 import { RequestConfig } from ".";
+import { StandardSchemaV1 } from "./standar-schema/interface";
 import { RequestMethod } from "./xhr-interface";
 
 export class AdapterRequestError<XhrResp = Response> extends Error {
@@ -7,6 +8,7 @@ export class AdapterRequestError<XhrResp = Response> extends Error {
   }
 
   declare public cause?: unknown;
+  public issues?: readonly StandardSchemaV1.Issue[];
 
   constructor(
     reason: string,
@@ -19,5 +21,10 @@ export class AdapterRequestError<XhrResp = Response> extends Error {
   ) {
     super(reason, { cause });
     this.name = "AdapterRequestError";
+  }
+
+  withIssues(issues?: readonly StandardSchemaV1.Issue[]): this {
+    this.issues = issues;
+    return this;
   }
 }

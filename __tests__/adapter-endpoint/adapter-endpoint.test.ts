@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import zod from "zod";
 import { Adapter, AdapterResponse } from "../../src";
 import { BeforeRequestHandler, DefaultXhrReqConfig } from "../../src/adapter";
 
@@ -465,5 +466,55 @@ describe("Adapter.endpoint()", () => {
     expect(e6.url({ searchParams: { "search": "hello", "page": "69" } })).toBe(
       "https://mydomain.com/api/products?search=hello&page=69",
     );
+  });
+
+  it("validation with a standard schema", async () => {
+    fetchMock.mockImplementation(async (url, options) => {
+      if (url === "http://127.0.0.1/api/user" && options?.method === "GET") {
+        return Response.json({ name: "John", id: 1 });
+      }
+      if (url === "http://127.0.0.1/api/user" && options?.method === "POST") {
+        return Response.json({ foo: "bar" });
+      }
+      throw new Error("unexpected request");
+    });
+
+    const getSchema = zod.object({
+      id: zod.number(),
+      name: zod.string(),
+      age: zod.optional(zod.number()),
+    });
+
+    const postSchema = zod.object({
+      foo: zod.string(),
+    });
+
+    const e = adapter.endpoint({
+      url: "/api/user",
+      accepts: ["get", "post"],
+      validate: {
+        get: getSchema,
+        post: postSchema,
+      },
+    });
+
+    const resp = await e.get();
+    expect(resp.data).toEqual({ name: "John", id: 1 });
+
+    const resp2 = await e.post();
+    expect(resp2.data).toEqual({ foo: "bar" });
+
+    fetchMock.mockImplementation(async (url, options) => {
+      if (url === "http://127.0.0.1/api/user" && options?.method === "GET") {
+        return Response.json({ name: "John" }); // missing id
+      }
+      if (url === "http://127.0.0.1/api/user" && options?.method === "POST") {
+        return Response.json({ Foo: "bar" }); // incorrect name
+      }
+      throw new Error("unexpected request");
+    });
+
+    expect(e.get()).rejects.toThrow("Invalid response data");
+    expect(e.post()).rejects.toThrow("Invalid response data");
   });
 });
