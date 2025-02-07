@@ -612,6 +612,8 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
       PatchReqT,
       PutReqT,
       DeleteReqT,
+      XhrReqConfig,
+      XhrResp,
       AcceptedMethods
     >,
     AcceptedMethods
