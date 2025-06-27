@@ -122,7 +122,11 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     }
 
     if (targetConf.xhr && baseConf.xhr) {
-      outConf.xhr = extend(baseConf.xhr, targetConf.xhr);
+      outConf.xhr = { ...baseConf.xhr, ...targetConf.xhr };
+    } else if (targetConf.xhr) {
+      outConf.xhr = targetConf.xhr;
+    } else if (baseConf.xhr) {
+      outConf.xhr = baseConf.xhr;
     }
 
     return [outConf, outHeaders] as const;
