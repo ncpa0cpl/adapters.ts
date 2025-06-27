@@ -1,6 +1,6 @@
 {
   "name": "adapters.ts",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "main": "./dist/esm/index.mjs",
   "types": "./dist/types/index.d.ts",
   "exports": {
