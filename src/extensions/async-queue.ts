@@ -1,5 +1,10 @@
 import { Queue } from "async-await-queue";
-import { Adapter, BeforeRequestHandler, DefaultXhrReqConfig, RequestConfig } from "../adapter";
+import {
+  Adapter,
+  BeforeRequestHandler,
+  DefaultXhrReqConfig,
+  RequestConfig,
+} from "../adapter";
 import { RequestMethod } from "../xhr-interface";
 
 export class AsyncQueue {

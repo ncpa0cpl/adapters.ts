@@ -1,5 +1,10 @@
 import { UrlLiteralParams, urlTemplate } from "url-templater.ts";
-import { type Adapter, type DefaultXhrReqConfig, RequestConfig, RequestConfigBase } from "./adapter";
+import {
+  type Adapter,
+  type DefaultXhrReqConfig,
+  RequestConfig,
+  RequestConfigBase,
+} from "./adapter";
 import { AdapterRequestError as AdapterRequestError } from "./request-error";
 import { StandardSchemaV1 } from "./standar-schema/interface";
 import { validate } from "./standar-schema/validate";
@@ -7,19 +12,31 @@ import { extend } from "./utils/extend";
 import { Rejects } from "./utils/rejects-decorator";
 import { RequestMethod } from "./xhr-interface";
 
-export type Validator<T> = ((data: unknown) => data is T) | StandardSchemaV1<unknown, T>;
+export type Validator<T> =
+  | ((data: unknown) => data is T)
+  | StandardSchemaV1<unknown, T>;
 
-export type HttpMethod = "get" | "post" | "patch" | "put" | "delete" | "options";
+export type HttpMethod =
+  | "get"
+  | "post"
+  | "patch"
+  | "put"
+  | "delete"
+  | "options";
 type AllHttpMethods = ["get", "post", "patch", "put", "delete", "options"];
 
-type IncludesAll<T extends any[], U extends any[]> = U[number] extends T[number] ? true : false;
-type ArrDiff<T extends any[], U extends any[]> = U extends [infer First, ...infer Rest]
-  ? First extends T[number] ? ArrDiff<Exclude<T, First>, Rest> : [First, ...ArrDiff<T, Rest>]
+type IncludesAll<T extends any[], U extends any[]> = U[number] extends T[number]
+  ? true
+  : false;
+type ArrDiff<T extends any[], U extends any[]> = U extends
+  [infer First, ...infer Rest]
+  ? First extends T[number] ? ArrDiff<Exclude<T, First>, Rest>
+  : [First, ...ArrDiff<T, Rest>]
   : [];
 
-export type Endpoint<AE, AcceptedMethods extends HttpMethod[]> = IncludesAll<AcceptedMethods, AllHttpMethods> extends
-  true ? AE
-  : Omit<AE, ArrDiff<AcceptedMethods, AllHttpMethods>[number]>;
+export type Endpoint<AE, AcceptedMethods extends HttpMethod[]> =
+  IncludesAll<AcceptedMethods, AllHttpMethods> extends true ? AE
+    : Omit<AE, ArrDiff<AcceptedMethods, AllHttpMethods>[number]>;
 
 export interface AdapterEndpointConfig<
   Url extends string,
@@ -108,7 +125,8 @@ type ConfigFor<
   Body = unknown,
   XhrReqConfig = DefaultXhrReqConfig,
 > = SearchParams["length"] extends 0
-  ? unknown extends Body ? [config?: RequestConfigBase<XhrReqConfig> & { body?: any }]
+  ? unknown extends Body
+    ? [config?: RequestConfigBase<XhrReqConfig> & { body?: any }]
   : [config: RequestConfigBase<XhrReqConfig> & { body: Body }]
   : unknown extends Body ? [
       config: RequestConfigBase<XhrReqConfig> & {
@@ -128,7 +146,8 @@ type RequestArguments<
   SearchParams extends string[] = [],
   XhrReqConfig = DefaultXhrReqConfig,
   Body = unknown,
-> = UrlLiteralParams<Url> extends Record<string, never> ? ConfigFor<SearchParams, Body, XhrReqConfig>
+> = UrlLiteralParams<Url> extends Record<string, never>
+  ? ConfigFor<SearchParams, Body, XhrReqConfig>
   : [
     queryParams: UrlLiteralParams<Url>,
     ...ConfigFor<SearchParams, Body, XhrReqConfig>,
@@ -137,24 +156,29 @@ type RequestArguments<
 type Eq<T, U> = T extends U ? true : false;
 type Or<A, B> = A extends true ? true : B;
 
-type IsAllOptional<SearchParams extends string[]> = SearchParams extends [infer Elem, ...infer Rest extends string[]]
+type IsAllOptional<SearchParams extends string[]> = SearchParams extends
+  [infer Elem, ...infer Rest extends string[]]
   ? Elem extends `?${string}` ? IsAllOptional<Rest> : false
   : true;
 
-type UrlGenConfig<SearchParams extends string[]> = Eq<SearchParams["length"], 0> extends true
-  ? Pick<RequestConfigBase, "baseURL" | "basePath">
-  : IsAllOptional<SearchParams> extends true ? Pick<RequestConfigBase, "baseURL" | "basePath"> & {
-      searchParams?: SearchParamsRecord<SearchParams>;
-    }
-  : Pick<RequestConfigBase, "baseURL" | "basePath"> & {
-    searchParams: SearchParamsRecord<SearchParams>;
-  };
+type UrlGenConfig<SearchParams extends string[]> =
+  Eq<SearchParams["length"], 0> extends true
+    ? Pick<RequestConfigBase, "baseURL" | "basePath">
+    : IsAllOptional<SearchParams> extends true
+      ? Pick<RequestConfigBase, "baseURL" | "basePath"> & {
+        searchParams?: SearchParamsRecord<SearchParams>;
+      }
+    : Pick<RequestConfigBase, "baseURL" | "basePath"> & {
+      searchParams: SearchParamsRecord<SearchParams>;
+    };
 
 type UrlParams<Url extends string, SearchParams extends string[] = []> =
   Or<Eq<SearchParams["length"], 0>, IsAllOptional<SearchParams>> extends true
-    ? UrlLiteralParams<Url> extends Record<string, never> ? [config?: UrlGenConfig<SearchParams>]
+    ? UrlLiteralParams<Url> extends Record<string, never>
+      ? [config?: UrlGenConfig<SearchParams>]
     : [params: UrlLiteralParams<Url>, config?: UrlGenConfig<SearchParams>]
-    : UrlLiteralParams<Url> extends Record<string, never> ? [config: UrlGenConfig<SearchParams>]
+    : UrlLiteralParams<Url> extends Record<string, never>
+      ? [config: UrlGenConfig<SearchParams>]
     : [params: UrlLiteralParams<Url>, config: UrlGenConfig<SearchParams>];
 
 type ResolvedParams<Url extends string> = {
@@ -314,7 +338,12 @@ export class AdapterEndpoint<
 
     if (this.params.validateRequest?.post) {
       if (!validate(this.params.validateRequest.post, config?.body)) {
-        throw new AdapterRequestError("Invalid request body", config, "POST", url);
+        throw new AdapterRequestError(
+          "Invalid request body",
+          config,
+          "POST",
+          url,
+        );
       }
     }
 
@@ -345,7 +374,12 @@ export class AdapterEndpoint<
 
     if (this.params.validateRequest?.patch) {
       if (!validate(this.params.validateRequest.patch, config?.body)) {
-        throw new AdapterRequestError("Invalid request body", config, "PATCH", url);
+        throw new AdapterRequestError(
+          "Invalid request body",
+          config,
+          "PATCH",
+          url,
+        );
       }
     }
 
@@ -376,7 +410,12 @@ export class AdapterEndpoint<
 
     if (this.params.validateRequest?.put) {
       if (!validate(this.params.validateRequest.put, config?.body)) {
-        throw new AdapterRequestError("Invalid request body", config, "PUT", url);
+        throw new AdapterRequestError(
+          "Invalid request body",
+          config,
+          "PUT",
+          url,
+        );
       }
     }
 
@@ -409,7 +448,12 @@ export class AdapterEndpoint<
 
     if (this.params.validateRequest?.delete) {
       if (!validate(this.params.validateRequest.delete, config?.body)) {
-        throw new AdapterRequestError("Invalid request body", config, "DELETE", url);
+        throw new AdapterRequestError(
+          "Invalid request body",
+          config,
+          "DELETE",
+          url,
+        );
       }
     }
 

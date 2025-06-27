@@ -349,10 +349,18 @@ describe("Adapter", () => {
         return Response.json("ok");
       });
 
-      await adapter.post("/api/list", { headers: { "Content-Type": "text/plain" } });
-      await adapter.delete("/api/list", { headers: { "Content-Type": "text/plain" } });
-      await adapter.put("/api/list", { headers: { "Content-Type": "text/plain" } });
-      await adapter.patch("/api/list", { headers: { "Content-Type": "text/plain" } });
+      await adapter.post("/api/list", {
+        headers: { "Content-Type": "text/plain" },
+      });
+      await adapter.delete("/api/list", {
+        headers: { "Content-Type": "text/plain" },
+      });
+      await adapter.put("/api/list", {
+        headers: { "Content-Type": "text/plain" },
+      });
+      await adapter.patch("/api/list", {
+        headers: { "Content-Type": "text/plain" },
+      });
     });
 
     it("when set to application/x-www-form-urlencoded init body is set appropriately", async () => {
@@ -363,7 +371,9 @@ describe("Adapter", () => {
           "application/x-www-form-urlencoded",
         );
         expect(options?.body).toBeInstanceOf(URLSearchParams);
-        expect((options?.body as URLSearchParams).toString()).toEqual("a=1&b=2");
+        expect((options?.body as URLSearchParams).toString()).toEqual(
+          "a=1&b=2",
+        );
 
         return Response.json("ok");
       });
@@ -439,7 +449,9 @@ describe("Adapter", () => {
 
       await deviceInfo.get("/api/list");
 
-      expect(requestedUrl).toEqual("https://my-domain.com/api/devices/info/api/list");
+      expect(requestedUrl).toEqual(
+        "https://my-domain.com/api/devices/info/api/list",
+      );
     });
   });
 });

@@ -1,7 +1,9 @@
 import { Validator } from "../adapter-endpoint";
 import { StandardSchemaV1 } from "./interface";
 
-function isStandardSchema<T>(validator: any): validator is StandardSchemaV1<unknown, T> {
+function isStandardSchema<T>(
+  validator: any,
+): validator is StandardSchemaV1<unknown, T> {
   return "~standard" in validator;
 }
 

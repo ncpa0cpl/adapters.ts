@@ -1,4 +1,10 @@
-import { AdapterEndpoint, AdapterEndpointConfig, Endpoint, HttpMethod, Validator } from "./adapter-endpoint";
+import {
+  AdapterEndpoint,
+  AdapterEndpointConfig,
+  Endpoint,
+  HttpMethod,
+  Validator,
+} from "./adapter-endpoint";
 import { AdapterRequestError } from "./request-error";
 import { AdapterResponse } from "./response";
 import { StandardSchemaV1 } from "./standar-schema/interface";
@@ -14,16 +20,19 @@ import { FetchXHR } from "./xhr/fetch";
 type MaybePromise<T> = T | Promise<T>;
 
 export type DefaultXhrReqConfig =
-  & Omit<
-    RequestInit,
-    "headers" | "body" | "method" | "signal"
-  >
+  & Omit<RequestInit, "headers" | "body" | "method" | "signal">
   & {
     /**
      * Overrides the default behavior of detecting the content type via
      * headers, and use the specified content type instead.
      */
-    responseType?: "json" | "text" | "blob" | "arrayBuffer" | "formData" | "none";
+    responseType?:
+      | "json"
+      | "text"
+      | "blob"
+      | "arrayBuffer"
+      | "formData"
+      | "none";
   };
 
 export interface BeforeRequestHandler<XhrReqConfig> {
@@ -33,7 +42,9 @@ export interface BeforeRequestHandler<XhrReqConfig> {
     body: unknown,
     method: RequestMethod,
   ): MaybePromise<
-    void | [url: URL, config: RequestConfig<XhrReqConfig>, body: unknown] | AdapterResponse
+    | void
+    | [url: URL, config: RequestConfig<XhrReqConfig>, body: unknown]
+    | AdapterResponse
   >;
 }
 
@@ -51,7 +62,10 @@ export interface RequestErrorHandler<XhrResp> {
   (error: AdapterRequestError<XhrResp>): void | AdapterRequestError<XhrResp>;
 }
 
-export interface AdapterOptions<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
+export interface AdapterOptions<
+  XhrReqConfig = DefaultXhrReqConfig,
+  XhrResp = Response,
+> {
   defaultTimeout?: number;
   defaultAutoRetry?: undefined | number;
   defaultRetryDelay?: number;
@@ -103,7 +117,8 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     const outConf = extend(baseConf, targetConf);
 
     if (baseConf.basePath && targetConf.basePath) {
-      outConf.basePath = trimCharEnd(baseConf.basePath, "/") + "/" + trimCharStart(targetConf.basePath, "/");
+      outConf.basePath = trimCharEnd(baseConf.basePath, "/") + "/"
+        + trimCharStart(targetConf.basePath, "/");
     }
 
     if (targetConf.xhr && baseConf.xhr) {
@@ -188,9 +203,17 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     config: RequestConfig<XhrReqConfig>,
     body: unknown,
     method: RequestMethod,
-  ): Promise<[url: URL, config: RequestConfig<XhrReqConfig>, body?: unknown] | AdapterResponse<XhrResp, T>> {
+  ): Promise<
+    | [url: URL, config: RequestConfig<XhrReqConfig>, body?: unknown]
+    | AdapterResponse<XhrResp, T>
+  > {
     if (this.extendsFrom) {
-      const ov = await this.extendsFrom.runBeforeRequestHandlers(url, config, body, method);
+      const ov = await this.extendsFrom.runBeforeRequestHandlers(
+        url,
+        config,
+        body,
+        method,
+      );
       if (AdapterResponse.is(ov)) {
         return ov as any;
       }
@@ -212,7 +235,9 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     return [url, config, body] as const;
   }
 
-  private async runAfterResponseHandlers<T>(response: AdapterResponse<XhrResp, T>) {
+  private async runAfterResponseHandlers<T>(
+    response: AdapterResponse<XhrResp, T>,
+  ) {
     if (this.extendsFrom) {
       response = await this.extendsFrom.runAfterResponseHandlers(response);
     }
@@ -254,7 +279,12 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     return error;
   }
 
-  private handleRequestError(err: unknown, config: RequestConfig<XhrReqConfig>, method: RequestMethod, url?: string) {
+  private handleRequestError(
+    err: unknown,
+    config: RequestConfig<XhrReqConfig>,
+    method: RequestMethod,
+    url?: string,
+  ) {
     let error: AdapterRequestError<XhrResp>;
     if (AdapterRequestError.is(err)) {
       error = err as AdapterRequestError<XhrResp>;
@@ -298,7 +328,9 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     }
 
     const u = new URL(url, this.getBaseUrl(config));
-    const newPathname = `${trimCharEnd(config.basePath, "/")}/${trimCharStart(u.pathname, "/")}`;
+    const newPathname = u.pathname.length > 0
+      ? `${trimCharEnd(config.basePath, "/")}/${trimCharStart(u.pathname, "/")}`
+      : config.basePath;
     u.pathname = newPathname;
     return u;
   }
@@ -317,7 +349,9 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
         }) as RequestConfig<XhrReqConfig, T>;
       }
 
-      return extend(this.baseConfig, { headers: this.baseHeaders }) as RequestConfig<XhrReqConfig, T>;
+      return extend(this.baseConfig, {
+        headers: this.baseHeaders,
+      }) as RequestConfig<XhrReqConfig, T>;
     }
 
     const [finalConfig, finalHeaders] = Adapter.mergeConfigs<XhrReqConfig, T>(
@@ -334,7 +368,11 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     return finalConfig;
   }
 
-  private createTimeout(config: RequestConfig<XhrReqConfig, any>, method: RequestMethod, url: string) {
+  private createTimeout(
+    config: RequestConfig<XhrReqConfig, any>,
+    method: RequestMethod,
+    url: string,
+  ) {
     if (!config || !config.timeout) {
       return [undefined, noop] as const;
     }
@@ -343,15 +381,24 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
 
     const tid = setTimeout(() => {
       abortController.abort(
-        new AdapterRequestError("Request aborted, timeout exceeded", config, method, url),
+        new AdapterRequestError(
+          "Request aborted, timeout exceeded",
+          config,
+          method,
+          url,
+        ),
       );
     }, config.timeout);
 
     if (config.abortSignal) {
-      config.abortSignal.addEventListener("abort", () => {
-        clearTimeout(tid);
-        abortController.abort(config.abortSignal?.reason);
-      }, { once: true });
+      config.abortSignal.addEventListener(
+        "abort",
+        () => {
+          clearTimeout(tid);
+          abortController.abort(config.abortSignal?.reason);
+        },
+        { once: true },
+      );
     }
 
     return [
@@ -370,10 +417,15 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     attemptsLeft = 0,
   ): Promise<AdapterResponse<XhrResp, T>> {
     let responseStatus = -1;
+    url.pathname = trimCharEnd(url.pathname, "/");
     const urlStr = url.toString();
 
     try {
-      const [abortSignal, clearTimeout] = this.createTimeout(config, method, urlStr);
+      const [abortSignal, clearTimeout] = this.createTimeout(
+        config,
+        method,
+        urlStr,
+      );
 
       const [response, status, statusText] = await this.xhr.sendRequest({
         method,
@@ -410,7 +462,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
       let data = (await this.xhr.extractPayload(response, config.xhr)) as T;
       if (config.validate) {
         let issues: readonly StandardSchemaV1.Issue[] | undefined;
-        if (!validate(config.validate, data, iss => (issues = iss))) {
+        if (!validate(config.validate, data, (iss) => (issues = iss))) {
           throw new AdapterRequestError<XhrResp>(
             "Invalid response data",
             config,
@@ -422,16 +474,27 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
         }
       }
 
-      const resp = new AdapterResponse(this, method, url, config, data, response);
+      const resp = new AdapterResponse(
+        this,
+        method,
+        url,
+        config,
+        data,
+        response,
+      );
 
       return await this.runAfterResponseHandlers(resp);
     } catch (error) {
       // only retry if the request was not sent or the response indicates a failure
       // do not retry if the error is dur to timeout, validation error, payload
       // extraction error or other local problem
-      if (attemptsLeft > 0 && !(responseStatus >= 200 && responseStatus < 300)) {
+      if (
+        attemptsLeft > 0 && !(responseStatus >= 200 && responseStatus < 300)
+      ) {
         if (config.retryDelay) {
-          await new Promise((resolve) => setTimeout(resolve, config.retryDelay));
+          await new Promise((resolve) =>
+            setTimeout(resolve, config.retryDelay)
+          );
         }
         return this.requestInternal(
           method,
@@ -467,7 +530,12 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
       u = this.runAfterBuildUrlHandlers(u);
       urlStr = u.toString();
 
-      let override = await this.runBeforeRequestHandlers(u, config, body, method);
+      let override = await this.runBeforeRequestHandlers(
+        u,
+        config,
+        body,
+        method,
+      );
       if (override) {
         if (AdapterResponse.is(override)) {
           return override as AdapterResponse<XhrResp, T>;
@@ -627,7 +695,10 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     return new AdapterEndpoint(this, params) as any;
   }
 
-  addHandler(type: "beforeRequest", handler: BeforeRequestHandler<XhrReqConfig>): void;
+  addHandler(
+    type: "beforeRequest",
+    handler: BeforeRequestHandler<XhrReqConfig>,
+  ): void;
   addHandler(type: "afterResponse", handler: AfterResponseHandler): void;
   addHandler(type: "afterBuildUrl", handler: AfterBuildUrlHandler): void;
   addHandler(type: "requestError", handler: RequestErrorHandler<XhrResp>): void;
@@ -648,10 +719,16 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     }
   }
 
-  removeHandler(type: "beforeRequest", handler: BeforeRequestHandler<XhrReqConfig>): void;
+  removeHandler(
+    type: "beforeRequest",
+    handler: BeforeRequestHandler<XhrReqConfig>,
+  ): void;
   removeHandler(type: "afterResponse", handler: AfterResponseHandler): void;
   removeHandler(type: "afterBuildUrl", handler: AfterBuildUrlHandler): void;
-  removeHandler(type: "requestError", handler: RequestErrorHandler<XhrResp>): void;
+  removeHandler(
+    type: "requestError",
+    handler: RequestErrorHandler<XhrResp>,
+  ): void;
   removeHandler(type: string, handler: any) {
     switch (type) {
       case "beforeRequest":

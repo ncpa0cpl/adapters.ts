@@ -1,9 +1,16 @@
-import { Adapter, BeforeRequestHandler, DefaultXhrReqConfig, RequestConfig } from "../adapter";
+import {
+  Adapter,
+  BeforeRequestHandler,
+  DefaultXhrReqConfig,
+  RequestConfig,
+} from "../adapter";
 import { AdapterResponse } from "../response";
 import { RequestMethod } from "../xhr-interface";
 
 type Resolvable = [
-  (value: AdapterResponse<any, any> | PromiseLike<AdapterResponse<any, any>>) => void,
+  (
+    value: AdapterResponse<any, any> | PromiseLike<AdapterResponse<any, any>>,
+  ) => void,
   (reason?: any) => void,
 ];
 

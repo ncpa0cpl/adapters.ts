@@ -128,7 +128,8 @@ describe("Adapter.endpoint()", () => {
     const e = adapter.endpoint({
       url: "/api/product",
       validate: {
-        post: (data: unknown): data is Array<{ id: number; name: string }> => true,
+        post: (data: unknown): data is Array<{ id: number; name: string }> =>
+          true,
       },
       validateRequest: {
         post: (data: unknown): data is { name: string } => true,
@@ -325,7 +326,11 @@ describe("Adapter.endpoint()", () => {
 
     const afterBuildUrl = vi.fn((u: URL) => u);
     const afterResponse = vi.fn((r: AdapterResponse<any, any>) => r);
-    const beforeRequest = vi.fn<BeforeRequestHandler<any>>((u, c, b) => [u, c, b]);
+    const beforeRequest = vi.fn<BeforeRequestHandler<any>>((
+      u,
+      c,
+      b,
+    ) => [u, c, b]);
     const onRequestError = vi.fn(err => err);
 
     const adapter = Adapter.new<DefaultXhrReqConfig>({
@@ -350,7 +355,11 @@ describe("Adapter.endpoint()", () => {
 
     const endpAfterBuildUrl = vi.fn((u: URL) => u);
     const endpAfterResponse = vi.fn((r: AdapterResponse<any, any>) => r);
-    const endpBeforeRequest = vi.fn<BeforeRequestHandler<any>>((u, c, b) => [u, c, b]);
+    const endpBeforeRequest = vi.fn<BeforeRequestHandler<any>>((
+      u,
+      c,
+      b,
+    ) => [u, c, b]);
     const endpRequestError = vi.fn(err => err);
     const e = adapter.endpoint({
       url: "{deviceID}/info",
@@ -395,7 +404,9 @@ describe("Adapter.endpoint()", () => {
 
     await e.get({ deviceID: "1234" }, { body: {} });
 
-    expect(requestedURL).toBe("https://myotherdomain.com/api/devices/1234/info");
+    expect(requestedURL).toBe(
+      "https://myotherdomain.com/api/devices/1234/info",
+    );
     expect(afterBuildUrl).toBeCalledTimes(1);
     expect(afterResponse).toBeCalledTimes(1);
     expect(beforeRequest).toBeCalledTimes(1);
@@ -424,13 +435,17 @@ describe("Adapter.endpoint()", () => {
     const e1 = adapter.endpoint({
       url: "/product/{id}/info",
     });
-    expect(e1.url({ id: "532" })).toBe("https://mydomain.com/api/product/532/info");
+    expect(e1.url({ id: "532" })).toBe(
+      "https://mydomain.com/api/product/532/info",
+    );
 
     const e2 = adapter.endpoint({
       url: "/product/{id}",
       searchParams: ["?goo"],
     });
-    expect(e2.url({ id: "MY_ID" })).toBe("https://mydomain.com/api/product/MY_ID");
+    expect(e2.url({ id: "MY_ID" })).toBe(
+      "https://mydomain.com/api/product/MY_ID",
+    );
     expect(e2.url({ id: "MY_ID" }, { searchParams: { "goo": "true" } })).toBe(
       "https://mydomain.com/api/product/MY_ID?goo=true",
     );
@@ -442,7 +457,9 @@ describe("Adapter.endpoint()", () => {
     expect(e3.url({ id: "ABC" }, { searchParams: { search: "foobar" } })).toBe(
       "https://mydomain.com/api/product/ABC/list?search=foobar",
     );
-    expect(e3.url({ id: "ABC" }, { searchParams: { search: "foobar", page: "2" } })).toBe(
+    expect(
+      e3.url({ id: "ABC" }, { searchParams: { search: "foobar", page: "2" } }),
+    ).toBe(
       "https://mydomain.com/api/product/ABC/list?search=foobar&page=2",
     );
 
@@ -456,13 +473,17 @@ describe("Adapter.endpoint()", () => {
       searchParams: ["?search", "?page"],
     });
     expect(e5.url()).toBe("https://mydomain.com/api/products");
-    expect(e5.url({ searchParams: { page: "123" } })).toBe("https://mydomain.com/api/products?page=123");
+    expect(e5.url({ searchParams: { page: "123" } })).toBe(
+      "https://mydomain.com/api/products?page=123",
+    );
 
     const e6 = adapter.endpoint({
       url: "/products",
       searchParams: ["search", "?page"],
     });
-    expect(e6.url({ searchParams: { "search": "hello" } })).toBe("https://mydomain.com/api/products?search=hello");
+    expect(e6.url({ searchParams: { "search": "hello" } })).toBe(
+      "https://mydomain.com/api/products?search=hello",
+    );
     expect(e6.url({ searchParams: { "search": "hello", "page": "69" } })).toBe(
       "https://mydomain.com/api/products?search=hello&page=69",
     );

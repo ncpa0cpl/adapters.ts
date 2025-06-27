@@ -5,7 +5,9 @@ export type FetchResponse<T> = Response & {
   json(): T;
 };
 
-export class FetchXHR implements XHRInterface<DefaultXhrReqConfig, FetchResponse<any>> {
+export class FetchXHR
+  implements XHRInterface<DefaultXhrReqConfig, FetchResponse<any>>
+{
   constructor() {}
 
   async sendRequest<T>(params: {
@@ -34,7 +36,9 @@ export class FetchXHR implements XHRInterface<DefaultXhrReqConfig, FetchResponse
           init.body = String(params.body);
           break;
         case "application/x-www-form-urlencoded":
-          init.body = new URLSearchParams(params.body as Record<string, string>);
+          init.body = new URLSearchParams(
+            params.body as Record<string, string>,
+          );
           break;
         case "multipart/form-data":
           const formData = new FormData();
@@ -61,7 +65,10 @@ export class FetchXHR implements XHRInterface<DefaultXhrReqConfig, FetchResponse
     return [resp as any, resp.status, resp.statusText];
   }
 
-  extractPayload<T>(response: FetchResponse<T>, config?: DefaultXhrReqConfig | undefined): Promise<T> {
+  extractPayload<T>(
+    response: FetchResponse<T>,
+    config?: DefaultXhrReqConfig | undefined,
+  ): Promise<T> {
     if (config?.responseType) {
       switch (config.responseType) {
         case "json":
