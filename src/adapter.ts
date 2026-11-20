@@ -48,6 +48,17 @@ export interface BeforeRequestHandler<XhrReqConfig> {
   >;
 }
 
+export interface BeforeRetryHandler<XhrReqConfig> {
+  (
+    url: URL,
+    config: RequestConfig<XhrReqConfig>,
+    body: unknown,
+    method: RequestMethod,
+  ):
+    | void
+    | boolean;
+}
+
 export interface AfterResponseHandler {
   <Xhr, T>(
     response: AdapterResponse<Xhr, T>,
@@ -69,11 +80,14 @@ export interface AdapterOptions<
   defaultTimeout?: number;
   defaultAutoRetry?: undefined | number;
   defaultRetryDelay?: number;
+  /** @default ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"] */
+  defaultRetryMethods?: Array<RequestMethod>;
   defaultXhr?: XhrReqConfig;
   defaultHeaders?: HeadersInit;
   baseURL?: string | URL;
   basePath?: string;
   onBeforeRequest?: BeforeRequestHandler<XhrReqConfig>[];
+  onBeforeRetry?: BeforeRetryHandler<XhrReqConfig>[];
   onAfterResponse?: AfterResponseHandler[];
   onAfterBuildUrl?: AfterBuildUrlHandler[];
   onRequestError?: RequestErrorHandler<XhrResp>[];
@@ -85,6 +99,8 @@ export interface RequestConfigBase<XhrReqConfig = DefaultXhrReqConfig> {
   timeout?: number;
   autoRetry?: undefined | number;
   retryDelay?: number;
+  /** @default ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"] */
+  retryMethods?: Array<RequestMethod>;
   xhr?: XhrReqConfig;
   headers?: HeadersInit;
   abortSignal?: AbortSignal;
@@ -98,6 +114,15 @@ export interface RequestConfig<XhrReqConfig = DefaultXhrReqConfig, T = unknown>
 }
 
 const noop = () => {};
+
+const DEFAULT_RETRY_METHODS: Array<RequestMethod> = [
+  "GET",
+  "POST",
+  "PATCH",
+  "PUT",
+  "DELETE",
+  "OPTIONS",
+];
 
 export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
   private static mergeConfigs<T, U>(
@@ -147,6 +172,9 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     if (options?.defaultRetryDelay != null) {
       baseConfig.retryDelay = options.defaultRetryDelay;
     }
+    if (options?.defaultRetryMethods != null) {
+      baseConfig.retryMethods = options.defaultRetryMethods;
+    }
     if (options?.defaultXhr != null) {
       baseConfig.xhr = { ...options.defaultXhr };
     }
@@ -177,6 +205,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
   private baseConfig: RequestConfig<XhrReqConfig>;
   private baseHeaders!: Headers;
   private beforeRequestHandlers;
+  private beforeRetryHandlers;
   private afterResponseHandlers;
   private afterBuildUrlHandlers;
   private afterRequestErrorHandlers;
@@ -197,9 +226,34 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     this.baseHeaders = baseHeaders;
 
     this.beforeRequestHandlers = options?.onBeforeRequest ?? [];
+    this.beforeRetryHandlers = options?.onBeforeRetry ?? [];
     this.afterResponseHandlers = options?.onAfterResponse ?? [];
     this.afterBuildUrlHandlers = options?.onAfterBuildUrl ?? [];
     this.afterRequestErrorHandlers = options?.onRequestError ?? [];
+  }
+
+  private runBeforeRetry(
+    url: URL,
+    config: RequestConfig<XhrReqConfig>,
+    body: unknown,
+    method: RequestMethod,
+  ): boolean {
+    if (this.extendsFrom) {
+      const prevent = this.extendsFrom.runBeforeRetry(
+        url,
+        config,
+        body,
+        method,
+      );
+      if (prevent) return prevent;
+    }
+
+    for (const handler of this.beforeRetryHandlers) {
+      const prevent = handler(url, config, body, method);
+      if (prevent != null && prevent === true) return true;
+    }
+
+    return false;
   }
 
   private async runBeforeRequestHandlers<T>(
@@ -489,12 +543,18 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
 
       return await this.runAfterResponseHandlers(resp);
     } catch (error) {
+      const { retryMethods = DEFAULT_RETRY_METHODS } = config;
+
       // only retry if the request was not sent or the response indicates a failure
       // do not retry if the error is dur to timeout, validation error, payload
       // extraction error or other local problem
       if (
         attemptsLeft > 0 && !(responseStatus >= 200 && responseStatus < 300)
+        && retryMethods.includes(method)
       ) {
+        const prevent = this.runBeforeRetry(url, config, body, method);
+        if (prevent) throw error;
+
         if (config.retryDelay) {
           await new Promise((resolve) =>
             setTimeout(resolve, config.retryDelay)
@@ -703,6 +763,10 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     type: "beforeRequest",
     handler: BeforeRequestHandler<XhrReqConfig>,
   ): void;
+  addHandler(
+    type: "beforeRetry",
+    handler: BeforeRetryHandler<XhrReqConfig>,
+  ): void;
   addHandler(type: "afterResponse", handler: AfterResponseHandler): void;
   addHandler(type: "afterBuildUrl", handler: AfterBuildUrlHandler): void;
   addHandler(type: "requestError", handler: RequestErrorHandler<XhrResp>): void;
@@ -710,6 +774,9 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     switch (type) {
       case "beforeRequest":
         this.beforeRequestHandlers.push(handler);
+        break;
+      case "beforeRetry":
+        this.beforeRetryHandlers.push(handler);
         break;
       case "afterResponse":
         this.afterResponseHandlers.push(handler);
@@ -727,6 +794,10 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     type: "beforeRequest",
     handler: BeforeRequestHandler<XhrReqConfig>,
   ): void;
+  removeHandler(
+    type: "beforeRetry",
+    handler: BeforeRetryHandler<XhrReqConfig>,
+  ): void;
   removeHandler(type: "afterResponse", handler: AfterResponseHandler): void;
   removeHandler(type: "afterBuildUrl", handler: AfterBuildUrlHandler): void;
   removeHandler(
@@ -737,6 +808,9 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     switch (type) {
       case "beforeRequest":
         arrRemove(this.beforeRequestHandlers, handler);
+        break;
+      case "beforeRetry":
+        arrRemove(this.beforeRetryHandlers, handler);
         break;
       case "afterResponse":
         arrRemove(this.afterResponseHandlers, handler);

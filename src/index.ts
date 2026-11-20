@@ -11,3 +11,5 @@ export {
 export { AdapterRequestError } from "./request-error";
 export { AdapterResponse } from "./response";
 export { FetchXHR } from "./xhr/fetch";
+
+export type { StandardSchemaV1 } from "./standar-schema/interface";
