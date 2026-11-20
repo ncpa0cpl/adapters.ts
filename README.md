@@ -108,13 +108,16 @@ const film = swapi.endpoint({
 });
 
 // sends a GET request to https://swapi.dev/api/film/1?required=Lorem+Ipsum&list=a&list=b&list=c
-film.get({ id: 1 }, {
-  searchParams: {
-    required: "Lorem ipsum", // must be provided
-    optional: undefined, // can be undefined
-    list: ["a", "b", "c"], // must be an Array<string>
+film.get(
+  { id: 1 },
+  {
+    searchParams: {
+      required: "Lorem ipsum", // must be provided
+      optional: undefined, // can be undefined
+      list: ["a", "b", "c"], // must be an Array<string>
+    },
   },
-});
+);
 ```
 
 ## Standard Schema Validation

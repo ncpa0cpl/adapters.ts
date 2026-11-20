@@ -1,29 +1,7 @@
 {
   "name": "adapters.ts",
   "version": "2.2.0",
-  "main": "./dist/esm/index.mjs",
-  "types": "./dist/types/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/types/index.d.ts",
-      "default": "./dist/esm/index.mjs"
-    },
-    "./extensions/async-queue": {
-      "types": "./extensions/async-queue.d.ts",
-      "default": "./extensions/async-queue.mjs"
-    },
-    "./extensions/deduplicator": {
-      "types": "./extensions/deduplicator.d.ts",
-      "default": "./extensions/deduplicator.mjs"
-    }
-  },
-  "files": [
-    "dist",
-    "extensions",
-    "README",
-    "LICENSE",
-    "package.json"
-  ],
+  "description": "Quick, easy and type-safe way for declarative http endpoint definitions.",
   "keywords": [
     "http",
     "xhr",
@@ -42,12 +20,34 @@
   "repository": {
     "url": "https://github.com/ncpa0cpl/adapters.ts"
   },
-  "description": "Quick, easy and type-safe way for declarative http endpoint definitions.",
   "license": "MIT",
   "author": {
     "name": "Szymon Bretner (ncpa0cpl)",
     "email": "szymonb21@gmail.com"
   },
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/esm/index.mjs"
+    },
+    "./extensions/async-queue": {
+      "types": "./extensions/async-queue.d.ts",
+      "default": "./extensions/async-queue.mjs"
+    },
+    "./extensions/deduplicator": {
+      "types": "./extensions/deduplicator.d.ts",
+      "default": "./extensions/deduplicator.mjs"
+    }
+  },
+  "main": "./dist/esm/index.mjs",
+  "types": "./dist/types/index.d.ts",
+  "files": [
+    "dist",
+    "extensions",
+    "README",
+    "LICENSE",
+    "package.json"
+  ],
   "scripts": {
     "build": "node ./scripts/build.mjs",
     "test:lint": "oxlint .",
@@ -62,14 +62,15 @@
     "url-templater.ts": "^1.1.0"
   },
   "devDependencies": {
-    "@ncpa0cpl/nodepack": "^2.3.3",
-    "dprint": "^0.49.0",
-    "esbuild": "^0.24.2",
+    "@ncpa0cpl/nodepack": "^2.5.1",
+    "dprint": "^0.65.0",
+    "esbuild": "^0.28.2",
     "git-hook-tasks": "git+https://github.com/ncpa0cpl/git-hook-tasks#2.0.1",
     "husky": "8.0.3",
-    "oxlint": "^0.15.10",
-    "typescript": "^5.7.3",
-    "vitest": "^3.0.5",
+    "oxlint": "^1.94.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1",
     "zod": "^3.24.1"
   },
   "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610"

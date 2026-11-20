@@ -1,14 +1,14 @@
 {
   "compilerOptions": {
     "target": "es2022",
-    "module": "NodeNext",
+    "module": "preserve",
+    "moduleResolution": "bundler",
     "declaration": true,
-    "downlevelIteration": true,
     "strict": true,
     "noUnusedLocals": true,
     "noUncheckedIndexedAccess": true,
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
   },
-  "exclude": ["__tests__"]
+  "exclude": ["__tests__", "vitest.config.ts"],
 }
