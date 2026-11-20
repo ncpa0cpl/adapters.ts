@@ -1,37 +1,46 @@
-name: Publish
+name: Release Package
+
+permissions:
+  id-token: write # Required for OIDC
+  contents: read
+  repository-projects: write
+
 on:
-  release:
-    types: [released]
+  push:
+    branches:
+      - release
 
 env:
   NPM_TOKEN: ""
 
 jobs:
-  publish-canary:
+  build-and-publish:
+    permissions:
+      id-token: write # Required for OIDC
+      packages: write
+      contents: write
+      pull-requests: write
+      issues: write
+      repository-projects: write
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [20.x]
     steps:
-      - name: Setup Node Environment
-        uses: actions/setup-node@v4
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+        with:
+          ref: release
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: "https://registry.npmjs.org"
+      - name: Update npm
+        run: npm install -g npm@latest
       - name: Install dependencies
-        uses: Borales/actions-yarn@v4
-        with:
-          cmd: install
-      - name: Build
-        uses: Borales/actions-yarn@v4
-        with:
-          cmd: build
-      - name: Test
-        uses: Borales/actions-yarn@v4
-        with:
-          cmd: git-hook-tasks pre-push
+        run: yarn install --frozen-lockfile
+      - name: Validating syntax
+        run: yarn test:tsc
+      - name: Running unit tests
+        run: yarn test:unit
+      - name: Building
+        run: yarn build
       - name: Publish
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_AUTOMATION_TOKEN }}
-          TAG_NAME: ${{ github.event.release.tag_name }}
-        run: |-
-          npm version --no-git-tag-version "$TAG_NAME" ?> /dev/null | true && npm publish
+        run: npm publish --access public
