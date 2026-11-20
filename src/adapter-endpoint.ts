@@ -106,18 +106,21 @@ export interface AdapterEndpointConfig<
   };
 }
 
+type StripArray<S extends string> = S extends `${infer Name}[]` ? Name : S;
+
 type SearchParamsRecord<SearchParams extends readonly string[]> =
   & {
     [
-      K in SearchParams[number] as K extends `?${infer PName}` ? PName
+      K in SearchParams[number] as K extends `?${infer PName}`
+        ? StripArray<PName>
         : never
-    ]?: string;
+    ]?: K extends `${string}[]` ? string[] : string;
   }
   & {
     [
       K in SearchParams[number] as K extends `?${infer PName}` ? never
-        : K
-    ]: string;
+        : StripArray<K>
+    ]: K extends `${string}[]` ? string[] : string;
   };
 
 type ConfigFor<
@@ -242,9 +245,13 @@ export class AdapterEndpoint<
     }
 
     for (let i = 0; i < this.params.searchParams.length; i++) {
-      const paramName = this.params.searchParams[i]!;
+      let paramName = this.params.searchParams[i]!;
       if (paramName[0] === "?") {
         continue;
+      }
+
+      if (paramName.endsWith("[]")) {
+        paramName = paramName.slice(0, -2);
       }
 
       if (
@@ -513,7 +520,7 @@ export class AdapterEndpoint<
     );
 
     if (config && "searchParams" in config && config.searchParams != null) {
-      const sp = new URLSearchParams(config.searchParams);
+      const sp = this.adapter["createSearchParams"](config.searchParams);
       u.search = sp.toString();
     }
 

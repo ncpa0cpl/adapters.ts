@@ -89,6 +89,34 @@ film.patch({ id: 1 }, { title: "A New Hope" }).then(response => {
 A basic method returning `true` with appropraite type definition can be used insted to only provide type definitions.
 (e.x. `(data): data is MyObject => true`)
 
+### Search params syntax
+
+Search params definition can have special characters that change the param type.
+
+- `?` at the beggining makes the param optional, without it the param is required and requests will fail if it is not given
+- `[]` at the end makes the param an array of strings
+
+#### Example
+
+```typescript
+import { Adapter } from "adapters.ts";
+
+const swapi = Adapter.new({ baseURL: "https://swapi.dev/" });
+const film = swapi.endpoint({
+  url: "/api/film/{id}",
+  searchParams: ["required", "?optional", "list[]"],
+});
+
+// sends a GET request to https://swapi.dev/api/film/1?required=Lorem+Ipsum&list=a&list=b&list=c
+film.get({ id: 1 }, {
+  searchParams: {
+    required: "Lorem ipsum", // must be provided
+    optional: undefined, // can be undefined
+    list: ["a", "b", "c"], // must be an Array<string>
+  },
+});
+```
+
 ## Standard Schema Validation
 
 Adapters also accept any validators that implement the [Standard Schema](https://github.com/standard-schema/standard-schema).

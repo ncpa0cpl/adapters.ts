@@ -59,6 +59,65 @@ describe("Adapter.endpoint()", () => {
     expect(resp.data).toEqual([{}]);
   });
 
+  it("simple GET endpoint with array searchParams", async () => {
+    fetchMock.mockImplementation(async (url, options) => {
+      const u = new URL(url);
+      return Response.json({
+        searchParams: [...u.searchParams.entries()],
+      });
+    });
+
+    const e = adapter.endpoint({
+      url: "/api/list",
+      searchParams: ["pages[]"],
+      validate: {
+        get: (data: unknown): data is Array<{ name: string }> => true,
+      },
+    });
+
+    const resp = await e.get({ searchParams: { pages: ["2", "5"] } });
+
+    expect(resp.data).toEqual({
+      searchParams: [
+        ["pages", "2"],
+        ["pages", "5"],
+      ],
+    });
+  });
+
+  it("simple GET endpoint with optional array searchParams", async () => {
+    fetchMock.mockImplementation(async (url, options) => {
+      const u = new URL(url);
+      return Response.json({
+        searchParams: [...u.searchParams.entries()],
+      });
+    });
+
+    const e = adapter.endpoint({
+      url: "/api/list",
+      searchParams: ["?pages[]"],
+      validate: {
+        get: (data: unknown): data is Array<{ name: string }> => true,
+      },
+    });
+
+    let resp = await e.get({ searchParams: {} });
+    expect(resp.data).toEqual({
+      searchParams: [],
+    });
+
+    resp = await e.get({
+      searchParams: { pages: ["100", "200", "300"] },
+    });
+    expect(resp.data).toEqual({
+      searchParams: [
+        ["pages", "100"],
+        ["pages", "200"],
+        ["pages", "300"],
+      ],
+    });
+  });
+
   it("parametrized GET endpoint", async () => {
     fetchMock.mockImplementation(async (url, options) => {
       if (

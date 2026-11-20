@@ -110,7 +110,10 @@ export interface RequestConfig<XhrReqConfig = DefaultXhrReqConfig, T = unknown>
   extends RequestConfigBase<XhrReqConfig>
 {
   validate?: Validator<T>;
-  searchParams?: URLSearchParams | string[][] | Record<string, string>;
+  searchParams?:
+    | URLSearchParams
+    | string[][]
+    | Record<string, string | string[]>;
 }
 
 const noop = () => {};
@@ -573,6 +576,31 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
     }
   }
 
+  private createSearchParams<T>(
+    params: RequestConfig<XhrReqConfig, T>["searchParams"],
+  ): URLSearchParams {
+    if (params instanceof URLSearchParams) {
+      return params;
+    }
+
+    if (Array.isArray(params) || params == null) {
+      return new URLSearchParams(params);
+    }
+
+    const usp = new URLSearchParams();
+    for (const [name, values] of Object.entries(params)) {
+      if (Array.isArray(values)) {
+        for (const v of values) {
+          usp.append(name, v);
+        }
+      } else {
+        usp.set(name, values);
+      }
+    }
+
+    return usp;
+  }
+
   async request<T>(
     method: RequestMethod,
     url: string | URL,
@@ -586,7 +614,7 @@ export class Adapter<XhrReqConfig = DefaultXhrReqConfig, XhrResp = Response> {
 
       let u = this.prepareUrl(url, config);
       if (config.searchParams) {
-        const sp = new URLSearchParams(config.searchParams);
+        const sp = this.createSearchParams(config.searchParams);
         u.search = sp.toString();
       }
       urlStr = u.toString();
